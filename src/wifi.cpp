@@ -1,6 +1,8 @@
-#include "wifi.h"
+#include <Arduino.h>
 #include <ESP8266WiFi.h>
+
 #include "credentials.h"
+#include "wifi.h"
 
 // wifi settings
 const char* ssid = STASSID;
