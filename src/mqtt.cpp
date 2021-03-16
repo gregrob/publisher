@@ -11,6 +11,7 @@
 #define MQTT_PORT         (1883)
 #define JSON_DOC_SIZE     (256)
 #define JSON_DOC_VAR_LED  "led"
+#define JSON_DOC_VAR_TXT  "text"
 
 // Static functions
 static void mqttMessageCallback(char* topic, byte* payload, unsigned int length);
@@ -28,6 +29,9 @@ const char* mqtt_command = "command";
 // mqtt client connection
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+// local storage for received messages
+static String messageText = "";
 
 /**
     Call back for handling received mqtt messages.
@@ -61,11 +65,13 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
         else {
             // Check if the json contains a valid led value
             if(doc.containsKey(JSON_DOC_VAR_LED)) {
+                bool rxLed = doc[JSON_DOC_VAR_LED];
+
                 debugMessage = (String() + "found json key: " + JSON_DOC_VAR_LED);
                 debugLog(&debugMessage, info);
 
                 // Adjust the LED state based on the led value
-                if(doc[JSON_DOC_VAR_LED] == false) {
+                if(rxLed == false) {
                     digitalWrite(LED_BUILTIN, HIGH);
                 }
                 else {
@@ -73,8 +79,21 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
                 }
             }
 
+            // Check if the json contains a valid text value
+            if(doc.containsKey(JSON_DOC_VAR_TXT)) {               
+                String rxText = doc[JSON_DOC_VAR_TXT];
+
+                debugMessage = (String() + "found json key: " + JSON_DOC_VAR_TXT);
+                debugLog(&debugMessage, info);
+
+                // Update the buffer (for other modules to use)
+                messageText = (String() + rxText); 
+            }
+
             // Valid json so publish a status message
             client.publish((String() + mqtt_prefix + '/' + mqtt_status).c_str(), messageStatus().c_str());
+            debugMessage = (String() + "valid json retransmit [" + mqtt_prefix + '/' + mqtt_status + "]: " + messageStatus().c_str());
+            debugLog(&debugMessage, info);
         }
     }
 
@@ -126,16 +145,11 @@ static void mqttReconnect(void) {
     mqtt setup.
 */
 void mqttSetup(void) {
-  String debugMessage;
-
   client.setServer(mqtt_server, MQTT_PORT);
   client.setCallback(mqttMessageCallback);
 
-  // Connect and publish a first message
+  // Connect
   mqttReconnect();  
-  client.publish((String() + mqtt_prefix + '/' + mqtt_status).c_str(), messageStatus().c_str());
-  debugMessage = (String() + "first message transmitted [" + mqtt_prefix + '/' + mqtt_status + "]: " + messageStatus().c_str());
-  debugLog(&debugMessage, info);
 }
 
 /**
@@ -182,6 +196,16 @@ void mqttMessageLoop(void) {
     }
 
     client.publish((String() + mqtt_prefix + '/' + mqtt_status).c_str(), messageStatus().c_str());
-    debugMessage = (String() + "subsequent message transmitted [" + mqtt_prefix + '/' + mqtt_status + "]: " + messageStatus().c_str());
+    debugMessage = (String() + "periodic message transmitted [" + mqtt_prefix + '/' + mqtt_status + "]: " + messageStatus().c_str());
     debugLog(&debugMessage, info);
+}
+
+
+/**
+    Get function for messageText
+
+    @return        pointer to the messageText.
+*/
+String* const messageTextGet(void) {
+    return(&messageText);
 }

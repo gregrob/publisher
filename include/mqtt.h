@@ -10,4 +10,7 @@ void mqttClientLoop(void);
 // Send mqtt messages
 void mqttMessageLoop(void);
 
+// Get function for messageText
+String* const messageTextGet(void);
+
 #endif
