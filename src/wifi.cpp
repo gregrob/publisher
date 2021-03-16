@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 
+#include "debug.h"
 #include "credentials.h"
 #include "wifi.h"
 
@@ -12,18 +13,22 @@ const char* password = STAPSK;
     wifi setup.
 */
 void setupWifi() {
-    Serial.println("Connecting to WiFi...");
+    String debugMessage;
+    
+    debugMessage = (String() + "connecting to wifi network " + ssid);
+    debugLog(&debugMessage, info);
   
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-        Serial.println("Connection Failed! Rebooting...");
+        debugMessage = (String() + "connection failed! rebooting in 5s...");
+        debugLog(&debugMessage, error);
         delay(5000);
         ESP.restart();
     }
 
-    Serial.print("Connected IP address: ");
-    Serial.println(WiFi.localIP());
+    debugMessage = (String() + "connected to wifi with ip address " + WiFi.localIP().toString());
+    debugLog(&debugMessage, info);
 }
 
 /**
@@ -51,6 +56,8 @@ static const char* wl_status_to_string(wl_status_t status) {
     wifi check prints the wifi status to the console.
 */
 void checkWifi() {
-    Serial.println("WiFi status: " + (String)wl_status_to_string(WiFi.status()) + ", RSSI: " + (String)WiFi.RSSI());
+    String debugMessage;
 
+    debugMessage = (String() + "wifi status: " + wl_status_to_string(WiFi.status()) + ", rssi: " + WiFi.RSSI());
+    debugLog(&debugMessage, info);
 }
