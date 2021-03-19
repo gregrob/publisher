@@ -21,8 +21,8 @@ void otaSetup(void) {
     // Hostname defaults to esp8266-[ChipID]
     // ArduinoOTA.setHostname("myesp8266");
 
-    // No authentication by default
-    // ArduinoOTA.setPassword("admin");
+    // Authentication.
+    ArduinoOTA.setPassword(OTA_PASSWORD);
 
     // Password can be set with it's md5 value as well
     // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
@@ -62,22 +62,26 @@ void otaSetup(void) {
         debugPrint(&debugMessage, brblue);
     });
 
+    ArduinoOTA.onError([](ota_error_t otaErrorCode) {
+        String debugMessage = (String() + "software update error " + otaErrorCode + ": ");
 
-
-/// TODODODODODOO
-    ArduinoOTA.onError([](ota_error_t error) {
-        Serial.printf("Error[%u]: ", error);
-        if (error == OTA_AUTH_ERROR) {
-        Serial.println("Auth Failed");
-        } else if (error == OTA_BEGIN_ERROR) {
-        Serial.println("Begin Failed");
-        } else if (error == OTA_CONNECT_ERROR) {
-        Serial.println("Connect Failed");
-        } else if (error == OTA_RECEIVE_ERROR) {
-        Serial.println("Receive Failed");
-        } else if (error == OTA_END_ERROR) {
-        Serial.println("End Failed");
+        if (otaErrorCode == OTA_AUTH_ERROR) {
+            debugMessage = debugMessage + (String() + "OTA_AUTH_ERROR - authentication failed");
+        } 
+        else if (otaErrorCode == OTA_BEGIN_ERROR) {
+            debugMessage = debugMessage + (String() + "OTA_BEGIN_ERROR - begin failed");
+        } 
+        else if (otaErrorCode == OTA_CONNECT_ERROR) {
+            debugMessage = debugMessage + (String() + "OTA_CONNECT_ERROR - connect failed");
         }
+        else if (otaErrorCode == OTA_RECEIVE_ERROR) {
+            debugMessage = debugMessage + (String() + "OTA_RECEIVE_ERROR - receive failed");
+        } 
+        else if (otaErrorCode == OTA_END_ERROR) {
+            debugMessage = debugMessage + (String() + "OTA_END_ERROR - end failed");
+        }
+
+        debugLog(&debugMessage, error);
     });
 
     ArduinoOTA.begin();
