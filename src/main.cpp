@@ -3,13 +3,16 @@
 
 #include "debug.h"
 #include "wifi.h"
+#include "ota.h"
 #include "mqtt.h"
 
 // heatbeat
-#define HEARTBEAT_INTERVAL  (10000)
+//#define HEARTBEAT_INTERVAL  (10000)
+#define HEARTBEAT_INTERVAL  (1000)
 
 // Local function definitions
 static void testMessage(void);
+static void serialRxLoop(void);
 
 // Create the Scheduler that will be in charge of managing the tasks
 Scheduler scheduler;
@@ -19,9 +22,10 @@ HardwareSerial *debugSerialPort;
 
 // Create tasks
 Task heartbeatTask(HEARTBEAT_INTERVAL, TASK_FOREVER, &testMessage);
-Task wifiStatus(10000, TASK_FOREVER, &checkWifi);
+Task wifiStatus(30000, TASK_FOREVER, &checkWifi);
 Task mqttClientTask(1000, TASK_FOREVER, &mqttClientLoop);
 Task mqttMessageTask(30000, TASK_FOREVER, &mqttMessageLoop);
+Task serialRx(1, TASK_FOREVER, &serialRxLoop);
 
 void setup(void) {
     // Setup serial
@@ -29,9 +33,15 @@ void setup(void) {
     debugSerialPort->begin(115200);
     debugSerialPort->println();
     Serial.begin(115200);
+    //Put the serial pins on D7 = Rx and D8 = Tx.
+    Serial.swap();
+    Serial.println("hello there");
 
     // Set-up wifi
     setupWifi();
+
+    // Set-up ota
+    otaSetup();
 
     // Set-up mqtt
     mqttSetup();
@@ -41,15 +51,18 @@ void setup(void) {
     scheduler.addTask(wifiStatus);        
     scheduler.addTask(mqttClientTask);
     scheduler.addTask(mqttMessageTask);
+    scheduler.addTask(serialRx);
 
-    //heartbeatTask.enable();
+    heartbeatTask.enable();
     wifiStatus.enable();
     mqttClientTask.enable();
     mqttMessageTask.enable();
+    serialRx.enable();
 
     randomSeed(micros());
     //digitalWrite(LED_BUILTIN, HIGH);
-    //pinMode(LED_BUILTIN, OUTPUT);    
+    //pinMode(LED_BUILTIN, OUTPUT);  
+
 }
 
 static void testMessage(void) {
@@ -58,11 +71,18 @@ static void testMessage(void) {
 
   timesCalled++;
 
-  debugMessage = (String() + "heartbeat " + (timesCalled * (HEARTBEAT_INTERVAL/1000)) + "s");
-  debugLog(&debugMessage, info);
 }
 
+static void serialRxLoop(void) {
+String incomingByte;
+      if (Serial.available() > 0) {
+    // read the incoming byte:
+    incomingByte = Serial.readString();
+    Serial.print(incomingByte);
+      }  
+}
 
 void loop(void) {
+  otaLoop();
   scheduler.execute();
 }
