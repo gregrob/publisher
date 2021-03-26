@@ -9,6 +9,12 @@ typedef struct {
   bool          triggered;
 } alarmZoneInput;
 
+// Structure for storing alarm state
+typedef struct {
+  const char*   alarmState;
+  const char*   alarmPanelStateMsg;
+} alarmStateMsgDefinitions;
+
 /**
     Alarm module setup.
     Sets up the serial bus.
@@ -31,11 +37,27 @@ void alarmBackgroundLoop(void);
 void alarmTriggerDebounce(void);
 
 /**
-    Send an alarm message via MQTT.
+    Send an alarm status message via MQTT.
+    Called from:
+      1. Within this module for event transmission (on transitions of status).
+      2. The scheduler for periodic transmission (slow rate).
+*/
+void alarmSendAlarmMessageStatus(void);
+
+/**
+    Send an alarm triggers message via MQTT.
     Called from:
       1. Within this module for event transmission (on transitions of triggers).
       2. The scheduler for periodic transmission (slow rate).
 */
-void alarmSendAlarmMessage(void);
+void alarmSendAlarmMessageTriggers(void);
+
+/**
+    Send all alarm messages via MQTT.
+    Called from:
+      1. Within this module for event transmission (on transitions of triggers).
+      2. The scheduler for periodic transmission (slow rate).
+*/
+void alarmSendAlarmMessageAll(void);
 
 #endif
