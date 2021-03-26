@@ -25,6 +25,8 @@ const char* mqtt_password = MQTT_PASSWORD;
 const char* mqtt_prefix = "publisher";
 const char* mqtt_status = "status";
 const char* mqtt_command = "command";
+const char* mqtt_alarm_triggers = "alarm triggers";
+const char* mqtt_alarm_status = "alarm status";
 
 // mqtt client connection
 WiFiClient espClient;
@@ -208,4 +210,62 @@ void mqttMessageLoop(void) {
 */
 String* const messageTextGet(void) {
     return(&messageText);
+}
+
+/**
+    Send an alarm triggers message via mqtt
+
+    @param[in]     zoneInputData pointer to the zone input structure
+    @param[in]     zones zumber of zones in the zoneInputData
+*/
+void mqttMessageSendAlarmTriggers(alarmZoneInput* const zoneInputData, unsigned int zones) {
+    // Crate a json object
+    DynamicJsonDocument doc(JSON_DOC_SIZE);
+
+    // Message string to be transmitted
+    String messageString;
+    
+    // Debug message
+    String debugMessage;
+
+    // Append all the zone status
+    for(unsigned int i = 0; i < zones; i++) {
+        doc[(zoneInputData + i)->zoneName] = (zoneInputData + i)->triggered;
+    }
+
+    // searilise the json string
+    serializeJson(doc, messageString);
+
+    // Transmit the message
+    client.publish((String() + mqtt_prefix + '/' + mqtt_alarm_triggers).c_str(), messageString.c_str());
+    debugMessage = (String() + "alarm msg tx [" + mqtt_prefix + '/' + mqtt_alarm_triggers + "]: " + messageString.c_str());
+    debugLog(&debugMessage, info);
+}
+
+/**
+    Send an alarm status message via mqtt
+
+    @param[in]     alarmState pointer to the alarm state string
+    @param[in]     alarmRxMxgCtr pointer to the total number of messages processed from the alarm panel
+*/
+void mqttMessageSendAlarmStatus(char* alarmState, unsigned int* const alarmRxMxgCtr) {
+    // Crate a json object
+    DynamicJsonDocument doc(JSON_DOC_SIZE);
+
+    // Message string to be transmitted
+    String messageString;
+    
+    // Debug message
+    String debugMessage;
+
+    doc["state"] = alarmState;
+    doc["msg ctn"] = *alarmRxMxgCtr;
+    
+    // searilise the json string
+    serializeJson(doc, messageString);
+
+    // Transmit the message
+    client.publish((String() + mqtt_prefix + '/' + mqtt_alarm_status).c_str(), messageString.c_str());
+    debugMessage = (String() + "alarm msg tx [" + mqtt_prefix + '/' + mqtt_alarm_status + "]: " + messageString.c_str());
+    debugLog(&debugMessage, info);
 }
