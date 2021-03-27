@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "credentials.h"
 #include "mqtt.h"
+#include "runtime.h"
 
 // definitions
 #define MQTT_PORT         (1883)
@@ -164,6 +165,8 @@ static String messageStatus(void) {
     String returnString;
 
     doc["millis"] = millis();
+    doc["peakrt"] = getPeakRuntimeuS();
+    doc["averagert"] = getAverageRuntimeuS();
     doc["ip"] = WiFi.localIP().toString();
     doc["mac"] = WiFi.macAddress();
     doc["rssi"] = WiFi.RSSI();
@@ -259,7 +262,7 @@ void mqttMessageSendAlarmStatus(char* alarmState, unsigned int* const alarmRxMxg
     String debugMessage;
 
     doc["state"] = alarmState;
-    doc["msg ctn"] = *alarmRxMxgCtr;
+    doc["messages"] = *alarmRxMxgCtr;
     
     // searilise the json string
     serializeJson(doc, messageString);
