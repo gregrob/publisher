@@ -177,8 +177,12 @@ void alarmHandleOneShot(void) {
     @param[in]     offTime off duration in time unit of the handler call rate.
 */
 void alarmFireOneShot(unsigned char onTime, unsigned char offTime) {
-    oneShot.onTime = onTime;
-    oneShot.offTime = offTime;
+    
+    // Only update one shot when it isnt active
+    if ((oneShot.onTime == 0) && (oneShot.offTime == 0)) {
+        oneShot.onTime = onTime;
+        oneShot.offTime = offTime;
+    }
 }
 
 /**
