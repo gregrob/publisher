@@ -5,6 +5,10 @@
 #include "debug.h"
 #include "mqtt.h"
 
+// Alarm Panel Settings
+// 1. Area > Properties > Arm/Disarm Speaker Beeps Via RF Keyfob
+// 2. Inputs > PGM Input > Momentary - On/Off (RF Relay)
+
 // Alarm serial baud rate
 #define ALARM_SERIAL_BAUD           (19200)
 
@@ -52,7 +56,8 @@ static alarmZoneInput alarmHomeStatus[] = {{"garage",         "Garage",         
 // Structure for all alarm state definitions
 static alarmStateMsgDefinitions alarmHomeStates[] = {{ALARM_DISARMED, "\x0c" "DISARMED " "\x1b\x1b\x13\x01\x1b\x1b"},
                                                      {ALARM_DISARMED, ALARM_HOME_ADDRESS " OFF"},
-                                                     {ALARM_ARMED,    ALARM_HOME_ADDRESS " ON"}
+                                                     {ALARM_ARMED,    ALARM_HOME_ADDRESS " ON"},
+                                                     {ALARM_ARMED,    "\x04\x17\x6E\x1E\x01\x1B\x1B\x13\x02\x1B\x1B\x12\x01\x1B\x1B\x09\x02\x1B\x1B\x0C\x01\x1B\x1B\x0B\x01\x1B\x1B\x0F\x01\x1B\x1B\x10\x01\x1B\x1C\x11"}
 };
 
 // Current state of the alarm (assume disarm on reset)
@@ -67,17 +72,30 @@ static unsigned int alarmRxMsgTotal = 0;
 // Pointer to the alarm serial port 
 static HardwareSerial *alarmSerial;
 
+// Alarm arm / disarm pin
+static uint8_t alarmArmDisarmPin = 0;
+
+// Structure for oneShot output
+static alarmOneShot oneShot = {0, 0};
+
 /**
     Alarm module setup.
     Sets up the serial bus.
 
     @param[in]     serialPort pointer to the serial port to be used for the alarm.
+    @param[in]     setArmDisarmPin pin to use for arm / diarm of the alarm.
     @return        pointer to the serial port used for the alarm.
 */
-HardwareSerial* const alarmSetup(HardwareSerial* const serialPort) {
+HardwareSerial* const alarmSetup(HardwareSerial* const serialPort, uint8_t setArmDisarmPin) {
+    
+    // Set-up serial interface to the alarm
     alarmSerial = serialPort;
-
     alarmSerial->begin(ALARM_SERIAL_BAUD);
+
+    // Set-up arm / disarm output
+    alarmArmDisarmPin = setArmDisarmPin;
+    digitalWrite(alarmArmDisarmPin, LOW);
+    pinMode(alarmArmDisarmPin, OUTPUT);
 
     return (alarmSerial);
 }
@@ -128,6 +146,40 @@ static void alarmDetailedMessageDebug(char* const rawMessage) {
         debugPrintln(&debugMessage, white);
 }
 #endif
+
+/**
+    Handle the one shot on the alarm arm / disarm output.
+    Call at a cyclic rate.
+*/
+void alarmHandleOneShot(void) {
+
+    // Handle on part of the pulse
+    if (oneShot.onTime != 0) {
+        oneShot.onTime--;
+        digitalWrite(alarmArmDisarmPin, HIGH);
+    }
+
+    // Handle off part of the pulse
+    else if (oneShot.offTime != 0) {
+        oneShot.offTime--;
+        digitalWrite(alarmArmDisarmPin, LOW);
+    }
+
+    // Idle
+    else {
+    }
+}
+
+/**
+    Fire the one shot on the alarm arm / disarm output.
+    
+    @param[in]     onTime on duration in time unit of the handler call rate.
+    @param[in]     offTime off duration in time unit of the handler call rate.
+*/
+void alarmFireOneShot(unsigned char onTime, unsigned char offTime) {
+    oneShot.onTime = onTime;
+    oneShot.offTime = offTime;
+}
 
 /**
     Home structure updater.

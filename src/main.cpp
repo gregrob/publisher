@@ -10,7 +10,7 @@
 
 // heatbeat
 //#define HEARTBEAT_INTERVAL  (10000)
-#define HEARTBEAT_INTERVAL  (1000)
+#define HEARTBEAT_INTERVAL    (1000)
 
 // Local function definitions
 static void testMessage(void);
@@ -31,6 +31,7 @@ Task mqttClientTask(1000, TASK_FOREVER, &mqttClientLoop);
 Task mqttMessageTask(30000, TASK_FOREVER, &mqttMessageLoop);
 
 Task alarmTriggerDebounceTask(100, TASK_FOREVER, &alarmTriggerDebounce);
+Task alarmOneShotTask(100, TASK_FOREVER, &alarmHandleOneShot);
 Task alarmSendAlarmMessageTask(30000, TASK_FOREVER, &alarmSendAlarmMessageAll);
 
 
@@ -41,7 +42,7 @@ void setup(void) {
     debugSerialPort->println();
     
     // Set up the alarm interface
-    alarmSerialPort = alarmSetup(&Serial);
+    alarmSerialPort = alarmSetup(&Serial, D6);
     //Put the serial pins on D7 = Rx and D8 = Tx.
     alarmSerialPort->swap();
     
@@ -61,6 +62,7 @@ void setup(void) {
     scheduler.addTask(mqttMessageTask);
 
     scheduler.addTask(alarmTriggerDebounceTask);
+    scheduler.addTask(alarmOneShotTask);
     scheduler.addTask(alarmSendAlarmMessageTask);
 
     heartbeatTask.enable();
@@ -69,11 +71,10 @@ void setup(void) {
     mqttMessageTask.enable();
 
     alarmTriggerDebounceTask.enable();
+    alarmOneShotTask.enable();
     alarmSendAlarmMessageTask.enable();
 
     randomSeed(micros());
-    //digitalWrite(LED_BUILTIN, HIGH);
-    //pinMode(LED_BUILTIN, OUTPUT);  
 
 }
 

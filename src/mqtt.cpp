@@ -9,10 +9,11 @@
 #include "runtime.h"
 
 // definitions
-#define MQTT_PORT         (1883)
-#define JSON_DOC_SIZE     (256)
-#define JSON_DOC_VAR_LED  "led"
-#define JSON_DOC_VAR_TXT  "text"
+#define MQTT_PORT               (1883)
+#define JSON_DOC_SIZE           (256)
+#define JSON_DOC_VAR_LED        "led"
+#define JSON_DOC_VAR_TXT        "text"
+#define JSON_DOC_VAR_ARMDISARM  "armdisarm"
 
 // Static functions
 static void mqttMessageCallback(char* topic, byte* payload, unsigned int length);
@@ -28,6 +29,7 @@ const char* mqtt_status = "module status";
 const char* mqtt_command = "command";
 const char* mqtt_alarm_triggers = "alarm triggers";
 const char* mqtt_alarm_status = "alarm status";
+const char* mqtt_alarm_command = "alarm command";
 
 // mqtt client connection
 WiFiClient espClient;
@@ -75,10 +77,10 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
 
                 // Adjust the LED state based on the led value
                 if(rxLed == false) {
-                    digitalWrite(LED_BUILTIN, HIGH);
+                    //digitalWrite(LED_BUILTIN, HIGH);
                 }
                 else {
-                    digitalWrite(LED_BUILTIN, LOW);
+                    //digitalWrite(LED_BUILTIN, LOW);
                 }
             }
 
@@ -92,6 +94,20 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
                 // Update the buffer (for other modules to use)
                 messageText = (String() + rxText); 
             }
+
+          
+            // Alarm command message (+1 because of /)
+            if (strcmp(topic + strlen(mqtt_prefix) + 1, mqtt_alarm_command) == 0) {
+
+                // Check if the json contains a valid text value
+                if (doc.containsKey(JSON_DOC_VAR_ARMDISARM)) {               
+                    String rxText = doc[JSON_DOC_VAR_ARMDISARM];
+                    alarmFireOneShot(5, 5);
+
+                    debugMessage = (String() + "found json key: " + JSON_DOC_VAR_ARMDISARM);
+                    debugLog(&debugMessage, info);
+                }
+            }            
 
             // Valid json so publish a status message
             client.publish((String() + mqtt_prefix + '/' + mqtt_status).c_str(), messageStatus().c_str());
@@ -137,6 +153,7 @@ static void mqttReconnect(void) {
         debugLog(&debugMessage, info);
         
         client.subscribe((String() + mqtt_prefix + '/' + mqtt_command).c_str());
+        client.subscribe((String() + mqtt_prefix + '/' + mqtt_alarm_command).c_str());        
     } 
     else {
         debugMessage = (String() + "mqtt connection to " + mqtt_server + ":" + MQTT_PORT + " failed (rc=" + client.state() + "), will retry later");
