@@ -39,9 +39,6 @@ void runtimeMeasureAverageuS(void) {
         // Reset the loop counters and start time snapshot
         loopCounter = AVERAGE_RUNTIME_CYCLES;
         startTimeuS = currentTimeuS;
-
-        // DEBUG
-        //Serial1.println(String() + "AVERAGE " + averageRuntimeuS + "uS, PEAK " + (peakRuntimeuS/1000) + "mS");
     }
 
     else {
