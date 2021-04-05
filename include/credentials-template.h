@@ -2,8 +2,10 @@
 #define CREDENTIALS_H
 
 // Credentials for wifi
-#define STASSID             "SSID"
-#define STAPSK              "PASSWORD"
+// WiFi login and password now through WiFiManager module
+//#define STASSID             "SSID"
+//#define STAPSK              "PASSWORD"
+#define WIFI_AP_PASSWORD    "PASSWORD"
 
 // Credentials for oth
 #define OTA_PASSWORD        "PASSWORD"
