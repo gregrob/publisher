@@ -11,8 +11,8 @@
 
 // WiFi settings
 // WiFi login and password now through WiFiManager module
-const char* ssid = STASSID;
-const char* password = STAPSK;
+//const char* ssid = STASSID;
+//const char* password = STAPSK;
 const char* apPassword = WIFI_AP_PASSWORD;
 
 // Size of a MAC address char buffer
@@ -26,9 +26,10 @@ const char* apPassword = WIFI_AP_PASSWORD;
 
 // Structure for all publisher modules
 // The last element is always the default 
-static wifiModuleDetail publisherModules[] = {{"483FDA482A64", "publisher-alarm-482a64",  alarmModule},
-                                              {"F4CFA2D4EA77", "publisher-tank-d4ea77",   testModule},
-                                              {"000000000000", "publisher-default",       testModule}
+static wifiModuleDetail publisherModules[] = {{"483FDA482A64", "pub-alarm-482a64",  alarmModule},
+                                              {"F4CFA2D4EA77", "pub-test-d4ea77",   testModule},
+                                              {"84F3EB27BD6A", "pub-test-27bd6a",   testModule},
+                                              {"000000000000", "pub-default",       testModule}
 };
 
 // Pointer to the active module in the publisher module structure
@@ -142,7 +143,7 @@ void setupWifi() {
 
     // Explicitly set mode, esp defaults to STA+AP
     WiFi.mode(WIFI_STA);
-    //WiFi.hostname(publisherModules[activeModule].moduleHostName);
+    WiFi.hostname(publisherModules[activeModule].moduleHostName);
 
     wifiManager.setDebugOutput(false);
     wifiManager.setAPCallback(callbackFailedWifiConnect);
@@ -150,7 +151,6 @@ void setupWifi() {
     //wifiManager.setConfigPortalTimeout(180);
     wifiManager.setConfigPortalTimeout(60);
 
-    //wifiManager.resetSettings();
     //WiFiManagerParameter custom_text("<p>MQTT stuff</p>");
     //wifiManager.addParameter(&custom_text);
     
@@ -159,7 +159,7 @@ void setupWifi() {
 
     debugMessage = (String() + "Connecting to WiFi network...");
     debugLog(&debugMessage, info);
-/*
+
     if(false == wifiManager.autoConnect(publisherModules[activeModule].moduleHostName, apPassword)) {
         debugMessage = (String() + "WiFi connection set-up failed! Rebooting in 5s...");
         debugLog(&debugMessage, error);
@@ -167,20 +167,6 @@ void setupWifi() {
         delay(5000);
         ESP.restart();
     }
-*/
-system_restore();
-
-WiFi.begin(ssid, password);
-    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-        debugMessage = (String() + "connection failed! rebooting in 5s...");
-        debugLog(&debugMessage, error);
-        delay(5000);
-        ESP.restart();
-    }
-
-
-    Serial1.println(WiFi.gatewayIP());
-
 
     // Reaching this point means WiFi is sucessfully connected
     debugMessage = (String() + "Connected to " + WiFi.SSID() + " with IP address " + WiFi.localIP().toString());
@@ -195,4 +181,28 @@ void checkWifi() {
 
     debugMessage = (String() + "WiFi status: " + wifiStatusToString(WiFi.status()) + ", RSSI: " + WiFi.RSSI());
     debugLog(&debugMessage, info);
+
+    if (WiFi.status() != WL_CONNECTED) {
+        debugMessage = (String() + "WiFi connection failed! Rebooting in 5s...");
+        debugLog(&debugMessage, error);
+
+        delay(5000);
+        ESP.restart();
+    }
+}
+
+/**
+    WiFi reset.
+*/
+void resetWifi() {
+    String debugMessage;
+    WiFiManager wifiManager;
+    
+    debugMessage = (String() + "WIFI resetting system to defaults! Rebooting in 5s...");
+    debugLog(&debugMessage, warning);
+
+    wifiManager.resetSettings();
+
+    delay(5000);
+    ESP.restart();
 }

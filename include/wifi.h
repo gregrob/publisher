@@ -31,4 +31,9 @@ void setupWifi();
 */
 void checkWifi();
 
+/**
+    WiFi reset.
+*/
+void resetWifi();
+
 #endif

@@ -21,7 +21,7 @@ void otaSetup(void) {
 
     // Hostname defaults to esp8266-[ChipID]
     // ArduinoOTA.setHostname("myesp8266");
-    //ArduinoOTA.setHostname(getWiFiModuleDetails()->moduleHostName);
+    ArduinoOTA.setHostname(getWiFiModuleDetails()->moduleHostName);
 
     // Authentication.
     ArduinoOTA.setPassword(OTA_PASSWORD);
