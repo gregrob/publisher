@@ -20,11 +20,14 @@ HardwareSerial *alarmSerialPort;
 // Create tasks
 Task wifiStatus(30000, TASK_FOREVER, &checkWifi);
 Task mqttClientTask(1000, TASK_FOREVER, &mqttClientLoop);
-Task mqttMessageTask(30000, TASK_FOREVER, &mqttMessageLoop);
+Task mqttMessageTask(10000, TASK_FOREVER, &mqttMessageLoop);
 
 Task alarmTriggerDebounceTask(100, TASK_FOREVER, &alarmTriggerDebounce);
 Task alarmOneShotTask(100, TASK_FOREVER, &alarmHandleOneShot);
 Task alarmSendAlarmMessageTask(30000, TASK_FOREVER, &alarmSendAlarmMessageAll);
+
+Task systemSendModuleStatusTask(30000, TASK_FOREVER, &mqttMessageSendModuleStatus);
+Task systemSendModuleSoftwareTask(30000, TASK_FOREVER, &mqttMessageSendModuleSoftware);
 
 void setup(void) {
     // Setup serial
@@ -55,13 +58,19 @@ void setup(void) {
     scheduler.addTask(alarmOneShotTask);
     scheduler.addTask(alarmSendAlarmMessageTask);
 
+    scheduler.addTask(systemSendModuleStatusTask);
+    scheduler.addTask(systemSendModuleSoftwareTask);
+
     wifiStatus.enable();
     mqttClientTask.enable();
     mqttMessageTask.enable();
-
+    
     alarmTriggerDebounceTask.enable();
     alarmOneShotTask.enable();
     alarmSendAlarmMessageTask.enable();
+
+    systemSendModuleStatusTask.enable();
+    systemSendModuleSoftwareTask.enable();
 
     randomSeed(micros());
 }

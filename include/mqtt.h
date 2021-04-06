@@ -3,22 +3,50 @@
 
 #include "alarm.h"
 
-// mqtt setup
+/**
+    MQTT setup.
+*/
 void mqttSetup(void);
 
-// mqtt client loop
+/**
+    MQTT client loop.
+*/
 void mqttClientLoop(void);
 
-// Send mqtt messages
+/**
+    MQTT message loop. 
+    Handle disconnections / reconnections.
+*/
 void mqttMessageLoop(void);
 
-// Get function for messageText
-String* const messageTextGet(void);
+/**
+    Send a Alarm Trigger state message via MQTT. 
+    The message contains all alarm trigger status.
 
-// Send an alarm triggers message via mqtt
-void mqttMessageSendAlarmTriggers(alarmZoneInput* const zoneInputData, unsigned int zones);
+    @param[in]     zoneInputData pointer to the zone input structure
+    @param[in]     zones number of zones in the zoneInputData
+*/
+void mqttMessageSendAlarmTriggers(const alarmZoneInput * const zoneInputData, const unsigned int zones);
 
-// Send an alarm status message via mqtt
-void mqttMessageSendAlarmStatus(char* alarmState, unsigned int* const alarmRxMxgCtr);
+/**
+    Send a Alarm Status message via MQTT. 
+    The message contains alarm state and debug information.
+
+    @param[in]     alarmState pointer to the alarm state
+    @param[in]     alarmRxMxgCtr pointer to the total number of alarm messages processed
+*/
+void mqttMessageSendAlarmStatus(const char * const alarmState, const unsigned int * const alarmRxMxgCtr);
+
+/**
+    Send a Module Software message via MQTT. 
+    The message contains build information.
+*/
+void mqttMessageSendModuleSoftware(void);
+
+/**
+    Send a Module Status message via MQTT. 
+    The message contains module IP and runtime information.
+*/
+void mqttMessageSendModuleStatus(void);
 
 #endif

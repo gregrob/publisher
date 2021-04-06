@@ -5,38 +5,37 @@
 
 #include "debug.h"
 #include "credentials.h"
+#include "wifi.h"
 #include "mqtt.h"
 #include "runtime.h"
 
-// definitions
+// Definitions
 #define MQTT_PORT               (1883)
 #define JSON_DOC_SIZE           (256)
-#define JSON_DOC_VAR_LED        "led"
-#define JSON_DOC_VAR_TXT        "text"
+#define JSON_DOC_VAR_RESET      "reset"
 #define JSON_DOC_VAR_ARMDISARM  "armdisarm"
 
 // Static functions
 static void mqttMessageCallback(char* topic, byte* payload, unsigned int length);
 static void mqttReconnect(void);
-static String messageStatus(void);
+static void mqttMessageSubscribe(const char * const shortTopic);
+static void mqttMessageSendRaw(const char * const shortTopic, const String * const message);
 
-// mqtt settings
+// MQTT settings
 const char* mqtt_server = "swarm.max.lan";
 const char* mqtt_user = MQTT_USER;
 const char* mqtt_password = MQTT_PASSWORD;
 const char* mqtt_prefix = "publisher";
-const char* mqtt_status = "module status";
-const char* mqtt_command = "command";
 const char* mqtt_alarm_triggers = "alarm triggers";
 const char* mqtt_alarm_status = "alarm status";
 const char* mqtt_alarm_command = "alarm command";
+const char* mqtt_module_software = "module software";
+const char* mqtt_module_status = "module status";
+const char* mqtt_module_command = "module command";
 
-// mqtt client connection
+// MQTT client connection
 WiFiClient espClient;
 PubSubClient client(espClient);
-
-// local storage for received messages
-static String messageText = "";
 
 /**
     Call back for handling received mqtt messages.
@@ -56,113 +55,87 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
         // Extract the message part of the payload
         snprintf(payloadBuffer, (length + 1), "%s", payload);
         
-        debugMessage = (String() + "message arrived [" + topic + "]: " + payloadBuffer);
+        debugMessage = (String() + "MQTT RX message [" + topic + "]: " + payloadBuffer);
         debugLog(&debugMessage, info);
 
         DeserializationError jsonError = deserializeJson(doc, payloadBuffer);
     
         // Check if the converted string was valid json
         if (jsonError) {
-            debugMessage = (String() + "deserializeJson() failed: " + jsonError.f_str());
+            debugMessage = (String() + "MQTT deserializeJson() failed: " + jsonError.f_str());
             debugLog(&debugMessage, error);
         }
 
         else {
-            // Check if the json contains a valid led value
-            if(doc.containsKey(JSON_DOC_VAR_LED)) {
-                bool rxLed = doc[JSON_DOC_VAR_LED];
 
-                debugMessage = (String() + "found json key: " + JSON_DOC_VAR_LED);
-                debugLog(&debugMessage, info);
+            // Module command message (+1 because of /) 
+            if (strcmp(topic + strlen(mqtt_prefix) + 1 + strlen(getWiFiModuleDetails()->moduleHostName) + 1, mqtt_module_command) == 0) {
+                // Check if the json contains a valid text value
+                if (doc.containsKey(JSON_DOC_VAR_RESET)) {               
+                    String rxText = doc[JSON_DOC_VAR_RESET];
 
-                // Adjust the LED state based on the led value
-                if(rxLed == false) {
-                    //digitalWrite(LED_BUILTIN, HIGH);
-                }
-                else {
-                    //digitalWrite(LED_BUILTIN, LOW);
+                    debugMessage = (String() + "MQTT found JSON key: " + JSON_DOC_VAR_RESET);
+                    debugLog(&debugMessage, info);
+
+                    resetWifi();
                 }
             }
 
-            // Check if the json contains a valid text value
-            if(doc.containsKey(JSON_DOC_VAR_TXT)) {               
-                String rxText = doc[JSON_DOC_VAR_TXT];
-
-                debugMessage = (String() + "found json key: " + JSON_DOC_VAR_TXT);
-                debugLog(&debugMessage, info);
-
-                // Update the buffer (for other modules to use)
-                messageText = (String() + rxText); 
-            }
-
-          
             // Alarm command message (+1 because of /)
-            if (strcmp(topic + strlen(mqtt_prefix) + 1, mqtt_alarm_command) == 0) {
+            else if (strcmp(topic + strlen(mqtt_prefix) + 1 + strlen(getWiFiModuleDetails()->moduleHostName) + 1, mqtt_alarm_command) == 0) {
 
                 // Check if the json contains a valid text value
                 if (doc.containsKey(JSON_DOC_VAR_ARMDISARM)) {               
                     String rxText = doc[JSON_DOC_VAR_ARMDISARM];
                     alarmFireOneShot(5, 5);
 
-                    debugMessage = (String() + "found json key: " + JSON_DOC_VAR_ARMDISARM);
+                    debugMessage = (String() + "MQTT found JSON key: " + JSON_DOC_VAR_ARMDISARM);
                     debugLog(&debugMessage, info);
                 }
             }            
 
             // Valid json so publish a status message
-            client.publish((String() + mqtt_prefix + '/' + mqtt_status).c_str(), messageStatus().c_str());
-            debugMessage = (String() + "valid json retransmit [" + mqtt_prefix + '/' + mqtt_status + "]: " + messageStatus().c_str());
-            debugLog(&debugMessage, info);
+            mqttMessageSendModuleStatus();
         }
     }
 
     else {
-        debugMessage = (String() + "received message bigger than allocated buffer of " + MQTT_MAX_PACKET_SIZE);
+        debugMessage = (String() + "Received message bigger than allocated buffer of " + MQTT_MAX_PACKET_SIZE);
         debugLog(&debugMessage, error);
     }    
 }
 
 /**
-    mqtt connection and subscription.
+    Handle MQTT connection and subscription.
 */
 static void mqttReconnect(void) {   
-    // Get the mac of the wifi
-    byte rawMAC[6];
-    char processedMAC[13];
     String debugMessage;
-    WiFi.macAddress(rawMAC);
 
-    // Preprocess a mac string without the : character
-    sprintf(processedMAC, "%X%X%X%X%X%X",
-      (unsigned)rawMAC[0], 
-      (unsigned)rawMAC[1],
-      (unsigned)rawMAC[2],
-      (unsigned)rawMAC[3], 
-      (unsigned)rawMAC[4],
-      (unsigned)rawMAC[5]);
+    // Topic prefix and host
+    String topicPrefixHost = String() + mqtt_prefix + '/' + getWiFiModuleDetails()->moduleHostName + '/';
 
     // Create a client ID based on the mac address
-    String clientId = (String() + "ESP8266Client-" + processedMAC);
-    //String clientId = "ESP8266Client-" + String(WiFi.macAddress()); 
+    String clientId = (String() + getWiFiModuleDetails()->moduleHostName);
 
     // Attempt to connect
-    debugMessage = (String() + "mqtt attempting connection from " + clientId.c_str() + " to " + mqtt_server  + ":" + MQTT_PORT);
+    debugMessage = (String() + "MQTT attempting connection from " + clientId.c_str() + " to " + mqtt_server  + ":" + MQTT_PORT);
     debugLog(&debugMessage, info);
     if (client.connect(clientId.c_str(), mqtt_user, mqtt_password)) {
-        debugMessage = (String() + "mqtt connected to " + mqtt_server + ":" + MQTT_PORT);
+        debugMessage = (String() + "MQTT connected to " + mqtt_server + ":" + MQTT_PORT);
         debugLog(&debugMessage, info);
         
-        client.subscribe((String() + mqtt_prefix + '/' + mqtt_command).c_str());
-        client.subscribe((String() + mqtt_prefix + '/' + mqtt_alarm_command).c_str());        
+        mqttMessageSubscribe(mqtt_module_command);
+        mqttMessageSubscribe(mqtt_alarm_command);     
     } 
     else {
-        debugMessage = (String() + "mqtt connection to " + mqtt_server + ":" + MQTT_PORT + " failed (rc=" + client.state() + "), will retry later");
+        debugMessage = (String() + "MQTT connection to " + mqtt_server + ":" + MQTT_PORT + " failed (rc=" + client.state() + "), will retry later");
         debugLog(&debugMessage, error);
     }
 }
 
+
 /**
-    mqtt setup.
+    MQTT setup.
 */
 void mqttSetup(void) {
   client.setServer(mqtt_server, MQTT_PORT);
@@ -172,14 +145,159 @@ void mqttSetup(void) {
   mqttReconnect();  
 }
 
-/**
-    Create a status message.
 
-    @return        status message in json string format.
+/**
+    MQTT client loop.
 */
-static String messageStatus(void) {
+void mqttClientLoop(void) {
+    client.loop();
+}
+
+
+/**
+    MQTT message loop. 
+    Handle disconnections / reconnections.
+*/
+void mqttMessageLoop(void) {
+
+    // If the client isn't connected, try and reconnect
+    if (!client.connected()) {
+        mqttReconnect();
+    }   
+}
+
+
+/**
+    Subscribe to MQTT message. 
+    This function will construct the topic [mqtt_prefix]/[hostname]/[shortTopic]. 
+
+    @param[in]     shortTopic pointer to the topic (short form without prefix and hostname)
+    @param[in]     message pointer to the message
+*/
+static void mqttMessageSubscribe(const char * const shortTopic) {
+    // Create the full message topic with prefix and hostname
+    String fullTopic = String() + mqtt_prefix + '/' + getWiFiModuleDetails()->moduleHostName + '/' + shortTopic;
+   
+    // Debug message
+    String debugMessage;
+
+    // Subscribe to the message
+    client.subscribe(fullTopic.c_str());
+    debugMessage = (String() + "MQTT subscribed to message [" + fullTopic + "]");
+    debugLog(&debugMessage, info);
+}
+
+
+/**
+    Send a raw MQTT message. 
+    This function will construct the topic [mqtt_prefix]/[hostname]/[shortTopic]. 
+    This function will not alter the message to be sent.
+
+    @param[in]     shortTopic pointer to the topic (short form without prefix and hostname)
+    @param[in]     message pointer to the message
+*/
+static void mqttMessageSendRaw(const char * const shortTopic, const String * const message) {
+    // Create the full message topic with prefix and hostname
+    String fullTopic = String() + mqtt_prefix + '/' + getWiFiModuleDetails()->moduleHostName + '/' + shortTopic;
+   
+    // Debug message
+    String debugMessage;
+
+    // If the client isn't connected, try and reconnect
+    if (!client.connected()) {
+        mqttReconnect();
+    }  
+
+    // Transmit the message
+    client.publish(fullTopic.c_str(), message->c_str());
+    debugMessage = (String() + "MQTT TX message [" + fullTopic + "]: " + message->c_str());
+    debugLog(&debugMessage, info);
+}
+
+
+/**
+    Send a Alarm Trigger state message via MQTT. 
+    The message contains all alarm trigger status.
+
+    @param[in]     zoneInputData pointer to the zone input structure
+    @param[in]     zones number of zones in the zoneInputData
+*/
+void mqttMessageSendAlarmTriggers(const alarmZoneInput * const zoneInputData, const unsigned int zones) {
+    // Crate a JSON object
     DynamicJsonDocument doc(JSON_DOC_SIZE);
-    String returnString;
+
+    // Message string to be transmitted
+    String messageString;
+
+    // Append all the zone status
+    for(unsigned int i = 0; i < zones; i++) {
+        doc[(zoneInputData + i)->zoneName] = (zoneInputData + i)->triggered;
+    }
+
+    // searilise the JSON string
+    serializeJson(doc, messageString);
+   
+    // Transmit the message
+    mqttMessageSendRaw(mqtt_alarm_triggers, &messageString);
+}
+
+
+/**
+    Send a Alarm Status message via MQTT. 
+    The message contains alarm state and debug information.
+
+    @param[in]     alarmState pointer to the alarm state
+    @param[in]     alarmRxMxgCtr pointer to the total number of alarm messages processed
+*/
+void mqttMessageSendAlarmStatus(const char * const alarmState, const unsigned int * const alarmRxMxgCtr) {
+    // Crate a JSON object
+    DynamicJsonDocument doc(JSON_DOC_SIZE);
+
+    // Message string to be transmitted
+    String messageString;
+
+    doc["state"] = alarmState;
+    doc["messages"] = *alarmRxMxgCtr;
+    
+    // searilise the JSON string
+    serializeJson(doc, messageString);
+
+    // Transmit the message
+    mqttMessageSendRaw(mqtt_alarm_status, &messageString);
+}
+
+
+/**
+    Send a Module Software message via MQTT. 
+    The message contains build information.
+*/
+void mqttMessageSendModuleSoftware(void) {
+    // Crate a JSON object
+    DynamicJsonDocument doc(JSON_DOC_SIZE);
+
+    // Message string to be transmitted
+    String messageString;
+
+    doc["date"] = __DATE__;
+    doc["time"] = __TIME__;
+    
+    // searilise the JSON string
+    serializeJson(doc, messageString);
+
+    // Transmit the message
+    mqttMessageSendRaw(mqtt_module_software, &messageString);
+}
+
+/**
+    Send a Module Status message via MQTT. 
+    The message contains module IP and runtime information.
+*/
+void mqttMessageSendModuleStatus(void) {
+    // Crate a JSON object
+    DynamicJsonDocument doc(JSON_DOC_SIZE);
+
+    // Message string to be transmitted
+    String messageString;
 
     doc["millis"] = millis();
     doc["peakrt"] = getPeakRuntimeuS();
@@ -189,103 +307,9 @@ static String messageStatus(void) {
     doc["rssi"] = WiFi.RSSI();
     doc["led"] = !digitalRead(LED_BUILTIN);
 
-    serializeJson(doc, returnString);
-
-    return(returnString);
-}
-
-/**
-    mqtt client loop.
-*/
-void mqttClientLoop(void) {
-    // If the client isn't connected, try and reconnect
-    if (!client.connected()) {
-        mqttReconnect();
-    }
-
-    client.loop();
-}
-
-/**
-    Send mqtt messages.
-*/
-void mqttMessageLoop(void) {
-    String debugMessage;
-
-    // If the client isn't connected, try and reconnect
-    if (!client.connected()) {
-        mqttReconnect();
-    }
-
-    client.publish((String() + mqtt_prefix + '/' + mqtt_status).c_str(), messageStatus().c_str());
-    debugMessage = (String() + "periodic message transmitted [" + mqtt_prefix + '/' + mqtt_status + "]: " + messageStatus().c_str());
-    debugLog(&debugMessage, info);
-}
-
-
-/**
-    Get function for messageText
-
-    @return        pointer to the messageText.
-*/
-String* const messageTextGet(void) {
-    return(&messageText);
-}
-
-/**
-    Send an alarm triggers message via mqtt
-
-    @param[in]     zoneInputData pointer to the zone input structure
-    @param[in]     zones zumber of zones in the zoneInputData
-*/
-void mqttMessageSendAlarmTriggers(alarmZoneInput* const zoneInputData, unsigned int zones) {
-    // Crate a json object
-    DynamicJsonDocument doc(JSON_DOC_SIZE);
-
-    // Message string to be transmitted
-    String messageString;
-    
-    // Debug message
-    String debugMessage;
-
-    // Append all the zone status
-    for(unsigned int i = 0; i < zones; i++) {
-        doc[(zoneInputData + i)->zoneName] = (zoneInputData + i)->triggered;
-    }
-
-    // searilise the json string
+    // searilise the JSON string
     serializeJson(doc, messageString);
 
     // Transmit the message
-    client.publish((String() + mqtt_prefix + '/' + mqtt_alarm_triggers).c_str(), messageString.c_str());
-    debugMessage = (String() + "alarm msg tx [" + mqtt_prefix + '/' + mqtt_alarm_triggers + "]: " + messageString.c_str());
-    debugLog(&debugMessage, info);
-}
-
-/**
-    Send an alarm status message via mqtt
-
-    @param[in]     alarmState pointer to the alarm state string
-    @param[in]     alarmRxMxgCtr pointer to the total number of messages processed from the alarm panel
-*/
-void mqttMessageSendAlarmStatus(char* alarmState, unsigned int* const alarmRxMxgCtr) {
-    // Crate a json object
-    DynamicJsonDocument doc(JSON_DOC_SIZE);
-
-    // Message string to be transmitted
-    String messageString;
-    
-    // Debug message
-    String debugMessage;
-
-    doc["state"] = alarmState;
-    doc["messages"] = *alarmRxMxgCtr;
-    
-    // searilise the json string
-    serializeJson(doc, messageString);
-
-    // Transmit the message
-    client.publish((String() + mqtt_prefix + '/' + mqtt_alarm_status).c_str(), messageString.c_str());
-    debugMessage = (String() + "alarm msg tx [" + mqtt_prefix + '/' + mqtt_alarm_status + "]: " + messageString.c_str());
-    debugLog(&debugMessage, info);
+    mqttMessageSendRaw(mqtt_module_status, &messageString);
 }
