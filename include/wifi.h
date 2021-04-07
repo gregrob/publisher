@@ -1,6 +1,20 @@
 #ifndef WIFI_H
 #define WIFI_H
 
+// Structure for wifi data
+typedef struct {
+  const char*   ipAddressName;
+  const char*   ipAddressDataPtr;
+  const char*   gatewayAddressName;
+  const char*   gatewayAddressDataPtr;
+  const char*   subnetMaskName;
+  const char*   subnetMaskDataPtr;
+  const char*   macAddressName;
+  const char*   macAddressDataPtr;
+  const char*   rssiName;
+  const long*   rssiDataPtr;
+} wifiData;
+
 // Host types
 enum wifiHostTypes {
     alarmModule = 0,
@@ -35,5 +49,11 @@ void checkWifi();
     WiFi reset.
 */
 void resetWifi();
+
+/**
+    Transmit a wifi message.
+    No processing of the message here.
+*/
+void wifiTransmitWifiMessage(void);
 
 #endif

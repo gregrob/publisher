@@ -47,10 +47,4 @@ void mqttMessageSendAlarmTriggers(const alarmZoneInput * const zoneInputData, co
 */
 void mqttMessageSendAlarmStatus(const char * const alarmState, const unsigned int * const alarmRxMxgCtr);
 
-/**
-    Send a Module Status message via MQTT. 
-    The message contains module IP and runtime information.
-*/
-void mqttMessageSendModuleStatus(void);
-
 #endif

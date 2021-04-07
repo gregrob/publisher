@@ -9,14 +9,19 @@
 #include "alarm.h"
 #include "runtime.h"
 
+
+// Local function definitions
+void periodicMessageTx(void);
+
+
 // Create the Scheduler that will be in charge of managing the tasks
-Scheduler scheduler;
+static Scheduler scheduler;
 
 // Debug serial port
-HardwareSerial *debugSerialPort;
+static HardwareSerial *debugSerialPort;
 
 // Alarm serial port
-HardwareSerial *alarmSerialPort;
+static HardwareSerial *alarmSerialPort;
 
 // Create tasks
 Task wifiStatus(30000, TASK_FOREVER, &checkWifi);
@@ -27,10 +32,8 @@ Task alarmTriggerDebounceTask(100, TASK_FOREVER, &alarmTriggerDebounce);
 Task alarmOneShotTask(100, TASK_FOREVER, &alarmHandleOneShot);
 Task alarmSendAlarmMessageTask(30000, TASK_FOREVER, &alarmSendAlarmMessageAll);
 
-Task systemSendModuleStatusTask(30000, TASK_FOREVER, &mqttMessageSendModuleStatus);
+Task periodicMessageTxTask(30000, TASK_FOREVER, &periodicMessageTx);
 
-Task versionSendMessageTask(30000, TASK_FOREVER, &versionTransmitVersionMessage);
-Task runtimeSendMessageTask(30000, TASK_FOREVER, &runtimeTransmitRuntimeMessage);
 
 void setup(void) {
     // Setup serial
@@ -60,11 +63,8 @@ void setup(void) {
     scheduler.addTask(alarmTriggerDebounceTask);
     scheduler.addTask(alarmOneShotTask);
     scheduler.addTask(alarmSendAlarmMessageTask);
-
-    scheduler.addTask(systemSendModuleStatusTask);
     
-    scheduler.addTask(versionSendMessageTask);
-    scheduler.addTask(runtimeSendMessageTask);
+    scheduler.addTask(periodicMessageTxTask);
 
     wifiStatus.enable();
     mqttClientTask.enable();
@@ -74,14 +74,11 @@ void setup(void) {
     alarmOneShotTask.enable();
     alarmSendAlarmMessageTask.enable();
 
-    systemSendModuleStatusTask.enable();
-    
-    versionSendMessageTask.enable();
-    runtimeSendMessageTask.enable();
-
+    periodicMessageTxTask.enable();
 
     randomSeed(micros());
 }
+
 
 void loop(void) { 
     // Handle runtime measurements
@@ -92,4 +89,16 @@ void loop(void) {
     otaLoop();
     alarmBackgroundLoop();
     scheduler.execute();
+}
+
+
+/**
+    Transmit periodic messages.
+*/
+void periodicMessageTx(void) {
+
+    // System messages
+    versionTransmitVersionMessage();
+    runtimeTransmitRuntimeMessage();
+    wifiTransmitWifiMessage();
 }

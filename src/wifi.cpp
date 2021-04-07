@@ -5,9 +5,11 @@
 #include <ESP8266WebServer.h>
 #include "WiFiManager.h"
 
+#include "wifi.h"
+
 #include "debug.h"
 #include "credentials.h"
-#include "wifi.h"
+#include "messages_tx.h"
 
 // WiFi settings
 // WiFi login and password now through WiFiManager module
@@ -23,6 +25,56 @@ const char* apPassword = WIFI_AP_PASSWORD;
 
 // Size of a NIC char buffer
 #define WIFI_BUFFER_SIZE_NIC    (6)
+
+
+
+// String size for a IP address
+#define WIFI_IP_BUFFER_SIZE     (16)
+
+// String size for a MAC address
+#define WIFI_MAC_BUFFER_SIZE    (18)
+
+// Name for the ip
+#define WIFI_NAME_IP            ("ip")
+
+// Name for the gateway
+#define WIFI_NAME_GATEWAY       ("gateway")
+
+// Name for the subnet mask
+#define WIFI_NAME_SUBNET_MASK   ("mask")
+
+// Name for the mac
+#define WIFI_NAME_MAC           ("mac")
+
+// Name for the rssi
+#define WIFI_NAME_RSSI          ("rssi")
+
+
+// IP address
+static char ipString[WIFI_IP_BUFFER_SIZE];
+
+// Gateway address
+static char gatewayString[WIFI_IP_BUFFER_SIZE];
+
+// Subnet mask
+static char subnetMaskString[WIFI_IP_BUFFER_SIZE];
+
+// MAC address
+static char macString[WIFI_MAC_BUFFER_SIZE];
+
+// RSSI
+static long rssi;
+
+
+// Wifi data for this software
+static wifiData wifiDataSoftware = {WIFI_NAME_IP,           ipString,
+                                    WIFI_NAME_GATEWAY,      gatewayString,
+                                    WIFI_NAME_SUBNET_MASK,  subnetMaskString,
+                                    WIFI_NAME_MAC,          macString,
+                                    WIFI_NAME_RSSI,         &rssi
+};
+
+
 
 // Structure for all publisher modules
 // The last element is always the default 
@@ -205,4 +257,21 @@ void resetWifi() {
 
     delay(5000);
     ESP.restart();
+}
+
+
+/**
+    Transmit a wifi message.
+    No processing of the message here.
+*/
+void wifiTransmitWifiMessage(void) {   
+
+    // Update the IP, gateway, subnet mask, MAC, and RSSI variables before transmitting
+    strcpy(ipString, WiFi.localIP().toString().c_str());
+    strcpy(gatewayString, WiFi.gatewayIP().toString().c_str());
+    strcpy(subnetMaskString, WiFi.subnetMask().toString().c_str());
+    strcpy(macString, WiFi.macAddress().c_str());
+    rssi = WiFi.RSSI();
+
+    messsagesTxWifiMessage(&wifiDataSoftware);
 }

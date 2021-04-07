@@ -27,7 +27,6 @@ const char* mqtt_prefix = "publisher";
 const char* mqtt_alarm_triggers = "alarm triggers";
 const char* mqtt_alarm_status = "alarm status";
 const char* mqtt_alarm_command = "alarm command";
-const char* mqtt_module_status = "module status";
 const char* mqtt_module_command = "module command";
 
 // MQTT client connection
@@ -92,7 +91,7 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
             }            
 
             // Valid json so publish a status message
-            mqttMessageSendModuleStatus();
+            //mqttMessageSendModuleStatus();
         }
     }
 
@@ -261,28 +260,4 @@ void mqttMessageSendAlarmStatus(const char * const alarmState, const unsigned in
 
     // Transmit the message
     mqttMessageSendRaw(mqtt_alarm_status, messageString.c_str());
-}
-
-
-/**
-    Send a Module Status message via MQTT. 
-    The message contains module IP and runtime information.
-*/
-void mqttMessageSendModuleStatus(void) {
-    // Crate a JSON object
-    DynamicJsonDocument doc(JSON_DOC_SIZE);
-
-    // Message string to be transmitted
-    String messageString;
-
-    doc["ip"] = WiFi.localIP().toString();
-    doc["mac"] = WiFi.macAddress();
-    doc["rssi"] = WiFi.RSSI();
-    doc["led"] = !digitalRead(LED_BUILTIN);
-
-    // searilise the JSON string
-    serializeJson(doc, messageString);
-
-    // Transmit the message
-    mqttMessageSendRaw(mqtt_module_status, messageString.c_str());
 }
