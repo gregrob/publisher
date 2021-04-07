@@ -3,7 +3,7 @@
 #include "alarm.h"
 #include "credentials.h"
 #include "debug.h"
-#include "mqtt.h"
+#include "messages_tx.h"
 
 // Alarm Panel Settings
 // 1. Area > Properties > Arm/Disarm Speaker Beeps Via RF Keyfob
@@ -23,17 +23,34 @@
 #define ALARM_MAX_LAST_SEEN         (50)
 
 // Definitions for armed and disarmed
-#define ALARM_ARMED                 "armed"
-#define ALARM_DISARMED              "disarmed"
+#define ALARM_ARMED                 ("armed")
+#define ALARM_DISARMED              ("disarmed")
 
 // Size of alarm state string
 #define ALARM_STATE_STR_SIZE        (10)
 
 // Preamble for a trigger message definition
-#define ALARM_TRIGGER_MSG_PREAMBLE  "Open "
+#define ALARM_TRIGGER_MSG_PREAMBLE  ("Open ")
+
+// Name for the state
+#define ALARM_NAME_STATE            ("state")
+
+// Name for the message counter
+#define ALARM_NAME_MESSAGES         ("messages")
 
 // Enable extra debug information on alarm messages
 //#define ALARM_MESSAGE_DETAILED_DEBUG
+
+// Current state of the alarm (assume disarm on reset)
+static char alarmCurrentState[ALARM_STATE_STR_SIZE] = ALARM_DISARMED;
+
+// Total number of alarm messages read from the panel
+static unsigned long alarmRxMsgTotal = 0;
+
+// Alarm status data
+static const alarmStatusData alarmStatusDataTable = {ALARM_NAME_STATE,      alarmCurrentState,
+                                                     ALARM_NAME_MESSAGES,   &alarmRxMsgTotal
+};  
 
 // Preamble for a trigger message
 static const char* triggerMessagePreamble = ALARM_TRIGGER_MSG_PREAMBLE;
@@ -53,6 +70,9 @@ static alarmZoneInput alarmHomeStatus[] = {{"garage",         "Garage",         
                                            {"walk in robe",   "Walk In Robe",   ALARM_MAX_LAST_SEEN, false}
 };
 
+// Size of the versionDataSoftware structure
+static const unsigned int alarmHomeStatusSize = (sizeof(alarmHomeStatus) / sizeof(alarmHomeStatus[0]));
+
 // Structure for all alarm state definitions
 static alarmStateMsgDefinitions alarmHomeStates[] = {{ALARM_DISARMED, "\x0c" "DISARMED " "\x1b\x1b\x13\x01\x1b\x1b"},
                                                      {ALARM_DISARMED, ALARM_HOME_ADDRESS " OFF"},
@@ -60,14 +80,8 @@ static alarmStateMsgDefinitions alarmHomeStates[] = {{ALARM_DISARMED, "\x0c" "DI
                                                      {ALARM_ARMED,    "\x04\x17\x6E\x1E\x01\x1B\x1B\x13\x02\x1B\x1B\x12\x01\x1B\x1B\x09\x02\x1B\x1B\x0C\x01\x1B\x1B\x0B\x01\x1B\x1B\x0F\x01\x1B\x1B\x10\x01\x1B\x1C\x11"}
 };
 
-// Current state of the alarm (assume disarm on reset)
-static char alarmCurrentState[ALARM_STATE_STR_SIZE] = ALARM_DISARMED;
-
 // Alarm message buffer
 static char alarmMsgBuffer[ALARM_MSG_BUFFER];
-
-// Total number of alarm messages read from the panel
-static unsigned int alarmRxMsgTotal = 0;
 
 // Pointer to the alarm serial port 
 static HardwareSerial *alarmSerial;
@@ -244,12 +258,12 @@ static void alarmUpdateHome(char* const rawMessage) {
 
     // Alarm state update so send mqqt message
     if (alarmStateUpdate == true) {
-        alarmSendAlarmMessageStatus();
+        alarmTransmitAlarmStatusMessage();
     }
 
     // Alarm triggers update so send mqqt message
     else if (triggerTransitionActive == true) {
-        alarmSendAlarmMessageTriggers();
+        alarmTransmitAlarmTriggersMessage();
     }
 }
 
@@ -333,37 +347,34 @@ void alarmTriggerDebounce(void) {
 
     // A trigger was reset so send out a mqqt message
     if (triggerTransitionInactive == true) {
-        alarmSendAlarmMessageTriggers();
+        alarmTransmitAlarmTriggersMessage();
     }
 }
 
-/**
-    Send an alarm status message via MQTT.
-    Called from:
-      1. Within this module for event transmission (on transitions of status).
-      2. The scheduler for periodic transmission (slow rate).
-*/
-void alarmSendAlarmMessageStatus(void) {
-    mqttMessageSendAlarmStatus(alarmCurrentState, &alarmRxMsgTotal);
-}
 
 /**
-    Send an alarm triggers message via MQTT.
-    Called from:
-      1. Within this module for event transmission (on transitions of triggers).
-      2. The scheduler for periodic transmission (slow rate).
-*/
-void alarmSendAlarmMessageTriggers(void) {
-    mqttMessageSendAlarmTriggers(alarmHomeStatus, (sizeof(alarmHomeStatus)/sizeof(alarmHomeStatus[0])));
+    Transmit a alarm status message.
+    No processing of the message here.
+*/ 
+void alarmTransmitAlarmStatusMessage(void) {
+    messsagesTxAlarmStatusMessage(&alarmStatusDataTable);
 }
 
+
 /**
-    Send all alarm messages via MQTT.
-    Called from:
-      1. Within this module for event transmission (on transitions of triggers).
-      2. The scheduler for periodic transmission (slow rate).
-*/
-void alarmSendAlarmMessageAll(void) {
-    alarmSendAlarmMessageTriggers();
-    alarmSendAlarmMessageStatus();
+    Transmit a alarm triggers message.
+    No processing of the message here.
+*/ 
+void alarmTransmitAlarmTriggersMessage(void) {
+    messsagesTxAlarmTriggersMessage(alarmHomeStatus, &alarmHomeStatusSize);
+}
+
+
+/**
+    Transmit a ALL alarm messages.
+    No processing of the message here.
+*/ 
+void alarmTransmitAlarmAllMessage(void) {
+    alarmTransmitAlarmStatusMessage();
+    alarmTransmitAlarmTriggersMessage();
 }

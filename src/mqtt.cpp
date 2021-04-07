@@ -7,6 +7,7 @@
 #include "credentials.h"
 #include "wifi.h"
 #include "mqtt.h"
+#include "alarm.h"
 
 // Definitions
 #define MQTT_PORT               (1883)
@@ -24,8 +25,6 @@ const char* mqtt_server = "swarm.max.lan";
 const char* mqtt_user = MQTT_USER;
 const char* mqtt_password = MQTT_PASSWORD;
 const char* mqtt_prefix = "publisher";
-const char* mqtt_alarm_triggers = "alarm triggers";
-const char* mqtt_alarm_status = "alarm status";
 const char* mqtt_alarm_command = "alarm command";
 const char* mqtt_module_command = "module command";
 
@@ -208,56 +207,4 @@ void mqttMessageSendRaw(const char * const shortTopic, const char * const  messa
     client.publish(fullTopic.c_str(), message);
     debugMessage = (String() + "MQTT TX message [" + fullTopic + "]: " + message);
     debugLog(&debugMessage, info);
-}
-
-
-/**
-    Send a Alarm Trigger state message via MQTT. 
-    The message contains all alarm trigger status.
-
-    @param[in]     zoneInputData pointer to the zone input structure
-    @param[in]     zones number of zones in the zoneInputData
-*/
-void mqttMessageSendAlarmTriggers(const alarmZoneInput * const zoneInputData, const unsigned int zones) {
-    // Crate a JSON object
-    DynamicJsonDocument doc(JSON_DOC_SIZE);
-
-    // Message string to be transmitted
-    String messageString;
-
-    // Append all the zone status
-    for(unsigned int i = 0; i < zones; i++) {
-        doc[(zoneInputData + i)->zoneName] = (zoneInputData + i)->triggered;
-    }
-
-    // searilise the JSON string
-    serializeJson(doc, messageString);
-   
-    // Transmit the message
-    mqttMessageSendRaw(mqtt_alarm_triggers, messageString.c_str());
-}
-
-
-/**
-    Send a Alarm Status message via MQTT. 
-    The message contains alarm state and debug information.
-
-    @param[in]     alarmState pointer to the alarm state
-    @param[in]     alarmRxMxgCtr pointer to the total number of alarm messages processed
-*/
-void mqttMessageSendAlarmStatus(const char * const alarmState, const unsigned int * const alarmRxMxgCtr) {
-    // Crate a JSON object
-    DynamicJsonDocument doc(JSON_DOC_SIZE);
-
-    // Message string to be transmitted
-    String messageString;
-
-    doc["state"] = alarmState;
-    doc["messages"] = *alarmRxMxgCtr;
-    
-    // searilise the JSON string
-    serializeJson(doc, messageString);
-
-    // Transmit the message
-    mqttMessageSendRaw(mqtt_alarm_status, messageString.c_str());
 }

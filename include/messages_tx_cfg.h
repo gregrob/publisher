@@ -10,4 +10,10 @@
 // MQTT topic definition for module wifi
 #define MESSAGES_TX_MQTT_TOPIC_MODULE_WIFI      ("module wifi")
 
+// MQTT topic definition for alarm triggers
+#define MESSAGES_TX_MQTT_TOPIC_ALARM_STATUS     ("alarm status")
+
+// MQTT topic definition for alarm triggers
+#define MESSAGES_TX_MQTT_TOPIC_ALARM_TRIGGERS   ("alarm triggers")
+
 #endif

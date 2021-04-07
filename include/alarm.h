@@ -1,6 +1,14 @@
 #ifndef ALARM_H
 #define ALARM_H
 
+// Structure for alarm status data
+typedef struct {
+    const char*           alarmStateName;
+    const char*           alarmStatePtr;
+    const char*           alarmMessageCounterName;
+    const unsigned long*  alarmMessageCounterPtr;
+} alarmStatusData;
+
 // Structure for storing zone details
 typedef struct {
   const char*   zoneName;
@@ -58,27 +66,21 @@ void alarmBackgroundLoop(void);
 void alarmTriggerDebounce(void);
 
 /**
-    Send an alarm status message via MQTT.
-    Called from:
-      1. Within this module for event transmission (on transitions of status).
-      2. The scheduler for periodic transmission (slow rate).
-*/
-void alarmSendAlarmMessageStatus(void);
+    Transmit a alarm status message.
+    No processing of the message here.
+*/ 
+void alarmTransmitAlarmStatusMessage(void);
 
 /**
-    Send an alarm triggers message via MQTT.
-    Called from:
-      1. Within this module for event transmission (on transitions of triggers).
-      2. The scheduler for periodic transmission (slow rate).
-*/
-void alarmSendAlarmMessageTriggers(void);
+    Transmit a alarm triggers message.
+    No processing of the message here.
+*/ 
+void alarmTransmitAlarmTriggersMessage(void);
 
 /**
-    Send all alarm messages via MQTT.
-    Called from:
-      1. Within this module for event transmission (on transitions of triggers).
-      2. The scheduler for periodic transmission (slow rate).
-*/
-void alarmSendAlarmMessageAll(void);
+    Transmit a ALL alarm messages.
+    No processing of the message here.
+*/ 
+void alarmTransmitAlarmAllMessage(void);
 
 #endif

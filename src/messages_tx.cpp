@@ -29,6 +29,11 @@ static const char* messageMqttTopicModuleRuntime = MESSAGES_TX_MQTT_TOPIC_MODULE
 // MQTT topic for module wifi
 static const char* messageMqttTopicModuleWifi = MESSAGES_TX_MQTT_TOPIC_MODULE_WIFI;
 
+// MQTT topic for alarm status
+static const char* messageMqttTopicAlarmStatus = MESSAGES_TX_MQTT_TOPIC_ALARM_STATUS;
+
+// MQTT topic for alarm triggers
+static const char* messageMqttTopicAlarmTriggers = MESSAGES_TX_MQTT_TOPIC_ALARM_TRIGGERS;
 
 /**
     Transmit a version message.
@@ -103,4 +108,50 @@ void messsagesTxWifiMessage(const wifiData * const wifiDataStructurePtr) {
     
     // Transmit the message
     mqttMessageSendRaw(messageMqttTopicModuleWifi, messageToSend);   
+}
+
+/**
+    Transmit a alarm status message.
+    Convert the message structure into JSON format here.
+
+    @param[in]     alarmDataStructurePtr pointer to the alarm status data structure
+*/
+void messsagesTxAlarmStatusMessage(const alarmStatusData * const alarmStatusDataStructurePtr) {
+    
+    // Clear the JSON object
+    doc.clear();
+   
+    // Populate the date (manually because of mixed types)
+    doc[alarmStatusDataStructurePtr->alarmStateName] = alarmStatusDataStructurePtr->alarmStatePtr;
+    doc[alarmStatusDataStructurePtr->alarmMessageCounterName] = *alarmStatusDataStructurePtr->alarmMessageCounterPtr;
+
+    // Searilise the JSON string
+    serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
+    
+    // Transmit the message
+    mqttMessageSendRaw(messageMqttTopicAlarmStatus, messageToSend);   
+}
+
+/**
+    Transmit a alarm triggers message. 
+    Convert the message structure into JSON format here.
+
+    @param[in]     alarmTriggersDataStructurePtr pointer to the alarm triggers data structure
+    @param[in]     alarmTriggersStructureSize size of the alarm triggers data structure
+*/
+void messsagesTxAlarmTriggersMessage(const alarmZoneInput * const alarmTriggersDataStructurePtr, const unsigned int * const alarmTriggersStructureSize) {
+    
+    // Clear the JSON object
+    doc.clear();
+
+    // Append all of the version data to the JSON object
+    for (unsigned int i = 0; i < *alarmTriggersStructureSize; i++) {
+        doc[(alarmTriggersDataStructurePtr + i)->zoneName] = (alarmTriggersDataStructurePtr + i)->triggered;
+    }
+    
+    // Searilise the JSON string
+    serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
+    
+    // Transmit the message
+    mqttMessageSendRaw(messageMqttTopicAlarmTriggers, messageToSend);
 }

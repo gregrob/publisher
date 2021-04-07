@@ -30,7 +30,6 @@ Task mqttMessageTask(10000, TASK_FOREVER, &mqttMessageLoop);
 
 Task alarmTriggerDebounceTask(100, TASK_FOREVER, &alarmTriggerDebounce);
 Task alarmOneShotTask(100, TASK_FOREVER, &alarmHandleOneShot);
-Task alarmSendAlarmMessageTask(30000, TASK_FOREVER, &alarmSendAlarmMessageAll);
 
 Task periodicMessageTxTask(30000, TASK_FOREVER, &periodicMessageTx);
 
@@ -62,7 +61,6 @@ void setup(void) {
 
     scheduler.addTask(alarmTriggerDebounceTask);
     scheduler.addTask(alarmOneShotTask);
-    scheduler.addTask(alarmSendAlarmMessageTask);
     
     scheduler.addTask(periodicMessageTxTask);
 
@@ -72,7 +70,6 @@ void setup(void) {
     
     alarmTriggerDebounceTask.enable();
     alarmOneShotTask.enable();
-    alarmSendAlarmMessageTask.enable();
 
     periodicMessageTxTask.enable();
 
@@ -101,4 +98,9 @@ void periodicMessageTx(void) {
     versionTransmitVersionMessage();
     runtimeTransmitRuntimeMessage();
     wifiTransmitWifiMessage();
+
+    // Only handle alarm messages if this is an alarm unit
+    if (getWiFiModuleDetails()->moduleHostType == alarmModule) {
+        alarmTransmitAlarmAllMessage();
+    }
 }
