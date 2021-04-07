@@ -12,6 +12,15 @@
 // Number of calls the peak runtime measurement should be ignored after boot
 #define PEAK_RUNTIME_IGNORE_CALLS (4)
 
+// Name for the peak runtime
+#define RUNTIME_NAME_PEAK           ("peak")
+
+// Name for the average runtime
+#define RUNTIME_NAME_AVERAGE        ("average")
+
+// Name for the uptime
+#define RUNTIME_NAME_UPTIME         ("uptime")
+
 
 // Average runtime
 static unsigned long averageRuntimeuS = 0;
@@ -23,9 +32,9 @@ static unsigned long peakRuntimeuS = 0;
 static unsigned long uptimeuS = 0;
 
 // Runtime data for this software
-static const runtimeData runtimeDataSoftware[] = {{"peak",      &peakRuntimeuS},
-                                                  {"average",   &averageRuntimeuS},
-                                                  {"uptime",    &uptimeuS}
+static const runtimeData runtimeDataSoftware[] = {{RUNTIME_NAME_PEAK,      &peakRuntimeuS},
+                                                  {RUNTIME_NAME_AVERAGE,   &averageRuntimeuS},
+                                                  {RUNTIME_NAME_UPTIME,    &uptimeuS}
 };  
 
 // Size of the runtimeDataSoftware structure
