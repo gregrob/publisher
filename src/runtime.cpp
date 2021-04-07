@@ -7,10 +7,10 @@
 
 
 // The number of cycles to measure average runtime over
-#define AVERAGE_RUNTIME_CYCLES    (1000)
+#define AVERAGE_RUNTIME_CYCLES      (1000)
 
 // Number of calls the peak runtime measurement should be ignored after boot
-#define PEAK_RUNTIME_IGNORE_CALLS (4)
+#define PEAK_RUNTIME_IGNORE_CALLS   (4)
 
 // Name for the peak runtime
 #define RUNTIME_NAME_PEAK           ("peak")
@@ -115,7 +115,7 @@ void runtimeMeasurePeakuS(void) {
 */
 void runtimeTransmitRuntimeMessage(void) {   
     
-    // Updatre the uptime variable before transmitting
+    // Update the uptime variable before transmitting
     uptimeuS = millis();
 
     messsagesTxRuntimeMessage(runtimeDataSoftware, &runtimeDataStructureSize);
