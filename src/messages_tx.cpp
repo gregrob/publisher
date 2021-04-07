@@ -33,6 +33,9 @@ static const char* messageMqttTopicModuleWifi = MESSAGES_TX_MQTT_TOPIC_MODULE_WI
 /**
     Transmit a version message.
     Convert the message structure into JSON format here.
+    
+    @param[in]     versionDataStructurePtr pointer to the version data structure
+    @param[in]     versionDataStructureSize size of the version data structure
 */
 void messsagesTxVersionMessage(const versionData * const versionDataStructurePtr, const unsigned int * const versionDataStructureSize) {
     
@@ -55,6 +58,9 @@ void messsagesTxVersionMessage(const versionData * const versionDataStructurePtr
 /**
     Transmit a runtime message.
     Convert the message structure into JSON format here.
+
+    @param[in]     runtimeDataStructurePtr pointer to the runtime data structure
+    @param[in]     runtimeDataStructureSize size of the runtime data structure
 */
 void messsagesTxRuntimeMessage(const runtimeData * const runtimeDataStructurePtr, const unsigned int * const runtimeDataStructureSize) {
   
@@ -77,6 +83,8 @@ void messsagesTxRuntimeMessage(const runtimeData * const runtimeDataStructurePtr
 /**
     Transmit a wifi message.
     Convert the message structure into JSON format here.
+
+    @param[in]     wifiDataStructurePtr pointer to the wifi data structure
 */
 void messsagesTxWifiMessage(const wifiData * const wifiDataStructurePtr) {
   
