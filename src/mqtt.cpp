@@ -7,7 +7,6 @@
 #include "credentials.h"
 #include "wifi.h"
 #include "mqtt.h"
-#include "runtime.h"
 
 // Definitions
 #define MQTT_PORT               (1883)
@@ -19,7 +18,6 @@
 static void mqttMessageCallback(char* topic, byte* payload, unsigned int length);
 static void mqttReconnect(void);
 static void mqttMessageSubscribe(const char * const shortTopic);
-static void mqttMessageSendRaw(const char * const shortTopic, const String * const message);
 
 // MQTT settings
 const char* mqtt_server = "swarm.max.lan";
@@ -29,7 +27,6 @@ const char* mqtt_prefix = "publisher";
 const char* mqtt_alarm_triggers = "alarm triggers";
 const char* mqtt_alarm_status = "alarm status";
 const char* mqtt_alarm_command = "alarm command";
-const char* mqtt_module_software = "module software";
 const char* mqtt_module_status = "module status";
 const char* mqtt_module_command = "module command";
 
@@ -196,7 +193,7 @@ static void mqttMessageSubscribe(const char * const shortTopic) {
     @param[in]     shortTopic pointer to the topic (short form without prefix and hostname)
     @param[in]     message pointer to the message
 */
-static void mqttMessageSendRaw(const char * const shortTopic, const String * const message) {
+void mqttMessageSendRaw(const char * const shortTopic, const char * const  message) {
     // Create the full message topic with prefix and hostname
     String fullTopic = String() + mqtt_prefix + '/' + getWiFiModuleDetails()->moduleHostName + '/' + shortTopic;
    
@@ -209,8 +206,8 @@ static void mqttMessageSendRaw(const char * const shortTopic, const String * con
     }  
 
     // Transmit the message
-    client.publish(fullTopic.c_str(), message->c_str());
-    debugMessage = (String() + "MQTT TX message [" + fullTopic + "]: " + message->c_str());
+    client.publish(fullTopic.c_str(), message);
+    debugMessage = (String() + "MQTT TX message [" + fullTopic + "]: " + message);
     debugLog(&debugMessage, info);
 }
 
@@ -238,7 +235,7 @@ void mqttMessageSendAlarmTriggers(const alarmZoneInput * const zoneInputData, co
     serializeJson(doc, messageString);
    
     // Transmit the message
-    mqttMessageSendRaw(mqtt_alarm_triggers, &messageString);
+    mqttMessageSendRaw(mqtt_alarm_triggers, messageString.c_str());
 }
 
 
@@ -263,30 +260,9 @@ void mqttMessageSendAlarmStatus(const char * const alarmState, const unsigned in
     serializeJson(doc, messageString);
 
     // Transmit the message
-    mqttMessageSendRaw(mqtt_alarm_status, &messageString);
+    mqttMessageSendRaw(mqtt_alarm_status, messageString.c_str());
 }
 
-
-/**
-    Send a Module Software message via MQTT. 
-    The message contains build information.
-*/
-void mqttMessageSendModuleSoftware(void) {
-    // Crate a JSON object
-    DynamicJsonDocument doc(JSON_DOC_SIZE);
-
-    // Message string to be transmitted
-    String messageString;
-
-    doc["date"] = __DATE__;
-    doc["time"] = __TIME__;
-    
-    // searilise the JSON string
-    serializeJson(doc, messageString);
-
-    // Transmit the message
-    mqttMessageSendRaw(mqtt_module_software, &messageString);
-}
 
 /**
     Send a Module Status message via MQTT. 
@@ -299,9 +275,6 @@ void mqttMessageSendModuleStatus(void) {
     // Message string to be transmitted
     String messageString;
 
-    doc["millis"] = millis();
-    doc["peakrt"] = getPeakRuntimeuS();
-    doc["averagert"] = getAverageRuntimeuS();
     doc["ip"] = WiFi.localIP().toString();
     doc["mac"] = WiFi.macAddress();
     doc["rssi"] = WiFi.RSSI();
@@ -311,5 +284,5 @@ void mqttMessageSendModuleStatus(void) {
     serializeJson(doc, messageString);
 
     // Transmit the message
-    mqttMessageSendRaw(mqtt_module_status, &messageString);
+    mqttMessageSendRaw(mqtt_module_status, messageString.c_str());
 }

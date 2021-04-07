@@ -2,6 +2,7 @@
 #include <TaskScheduler.h>
 
 #include "debug.h"
+#include "version.h"
 #include "wifi.h"
 #include "ota.h"
 #include "mqtt.h"
@@ -27,7 +28,9 @@ Task alarmOneShotTask(100, TASK_FOREVER, &alarmHandleOneShot);
 Task alarmSendAlarmMessageTask(30000, TASK_FOREVER, &alarmSendAlarmMessageAll);
 
 Task systemSendModuleStatusTask(30000, TASK_FOREVER, &mqttMessageSendModuleStatus);
-Task systemSendModuleSoftwareTask(30000, TASK_FOREVER, &mqttMessageSendModuleSoftware);
+
+Task versionSendMessageTask(30000, TASK_FOREVER, &versionTransmitVersionMessage);
+Task runtimeSendMessageTask(30000, TASK_FOREVER, &runtimeTransmitRuntimeMessage);
 
 void setup(void) {
     // Setup serial
@@ -59,7 +62,9 @@ void setup(void) {
     scheduler.addTask(alarmSendAlarmMessageTask);
 
     scheduler.addTask(systemSendModuleStatusTask);
-    scheduler.addTask(systemSendModuleSoftwareTask);
+    
+    scheduler.addTask(versionSendMessageTask);
+    scheduler.addTask(runtimeSendMessageTask);
 
     wifiStatus.enable();
     mqttClientTask.enable();
@@ -70,7 +75,10 @@ void setup(void) {
     alarmSendAlarmMessageTask.enable();
 
     systemSendModuleStatusTask.enable();
-    systemSendModuleSoftwareTask.enable();
+    
+    versionSendMessageTask.enable();
+    runtimeSendMessageTask.enable();
+
 
     randomSeed(micros());
 }
@@ -85,6 +93,3 @@ void loop(void) {
     alarmBackgroundLoop();
     scheduler.execute();
 }
-
-//!!!SW VERSION STUFF!!!
-// !!! PUBLISHER NAME IN MQQT PUBLISH!!!

@@ -1,6 +1,13 @@
 #ifndef RUNTIME_H
 #define RUNTIME_H
 
+// Structure for runtime data
+typedef struct {
+  const char*           runtimeName;
+  const unsigned long*  runtimeContents;
+} runtimeData;
+
+
 /**
     Measure average runtime.
     Measures the runtime over a set number of calls and calculate the average.
@@ -14,13 +21,9 @@ void runtimeMeasureAverageuS(void);
 void runtimeMeasurePeakuS(void);
 
 /**
-    Get the average runtime in uS.
+    Transmit a runtime message.
+    No processing of the message here.
 */
-float getAverageRuntimeuS(void);
-
-/**
-    Get the peak runtime in uS.
-*/
-unsigned long getPeakRuntimeuS(void);
+void runtimeTransmitRuntimeMessage(void);
 
 #endif

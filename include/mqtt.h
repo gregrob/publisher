@@ -20,6 +20,16 @@ void mqttClientLoop(void);
 void mqttMessageLoop(void);
 
 /**
+    Send a raw MQTT message. 
+    This function will construct the topic [mqtt_prefix]/[hostname]/[shortTopic]. 
+    This function will not alter the message to be sent.
+
+    @param[in]     shortTopic pointer to the topic (short form without prefix and hostname)
+    @param[in]     message pointer to the message
+*/
+void mqttMessageSendRaw(const char * const shortTopic, const char * const  message);
+
+/**
     Send a Alarm Trigger state message via MQTT. 
     The message contains all alarm trigger status.
 
@@ -36,12 +46,6 @@ void mqttMessageSendAlarmTriggers(const alarmZoneInput * const zoneInputData, co
     @param[in]     alarmRxMxgCtr pointer to the total number of alarm messages processed
 */
 void mqttMessageSendAlarmStatus(const char * const alarmState, const unsigned int * const alarmRxMxgCtr);
-
-/**
-    Send a Module Software message via MQTT. 
-    The message contains build information.
-*/
-void mqttMessageSendModuleSoftware(void);
 
 /**
     Send a Module Status message via MQTT. 

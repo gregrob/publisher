@@ -1,6 +1,10 @@
 #include <Arduino.h>
 
 #include "runtime.h"
+#include "runtime_cfg.h"
+
+#include "messages_tx.h"
+
 
 // The number of cycles to measure average runtime over
 #define AVERAGE_RUNTIME_CYCLES    (1000)
@@ -8,11 +12,25 @@
 // Number of calls the peak runtime measurement should be ignored after boot
 #define PEAK_RUNTIME_IGNORE_CALLS (4)
 
+
 // Average runtime
-static float averageRuntimeuS = 0;
+static unsigned long averageRuntimeuS = 0;
 
 // Peak runtime
 static unsigned long peakRuntimeuS = 0;
+
+// Uptime
+static unsigned long uptimeuS = 0;
+
+// Runtime data for this software
+static const runtimeData runtimeDataSoftware[] = {{"peak",      &peakRuntimeuS},
+                                                  {"average",   &averageRuntimeuS},
+                                                  {"uptime",    &uptimeuS}
+};  
+
+// Size of the runtimeDataSoftware structure
+static const unsigned int runtimeDataStructureSize = (sizeof(runtimeDataSoftware) / sizeof(runtimeDataSoftware[0]));
+
 
 /**
     Measure average runtime.
@@ -34,7 +52,7 @@ void runtimeMeasureAverageuS(void) {
     if (loopCounter == 0) {
                 
         // Calculate the average runtime
-        averageRuntimeuS = ((float)currentTimeuS - (float)startTimeuS) / (float)AVERAGE_RUNTIME_CYCLES;
+        averageRuntimeuS = (currentTimeuS - startTimeuS) / AVERAGE_RUNTIME_CYCLES;
         
         // Reset the loop counters and start time snapshot
         loopCounter = AVERAGE_RUNTIME_CYCLES;
@@ -45,6 +63,7 @@ void runtimeMeasureAverageuS(void) {
         loopCounter--;
     }
 }
+
 
 /**
     Measure peak runtime.
@@ -80,16 +99,15 @@ void runtimeMeasurePeakuS(void) {
     lastCallTimeSnapshotuS = curentTimeSnapshotuS;
 }
 
-/**
-    Get the average runtime in uS.
-*/
-float getAverageRuntimeuS(void) {
-    return(averageRuntimeuS);
-}
 
 /**
-    Get the peak runtime in uS.
+    Transmit a runtime message.
+    No processing of the message here.
 */
-unsigned long getPeakRuntimeuS(void) {
-    return(peakRuntimeuS);
+void runtimeTransmitRuntimeMessage(void) {   
+    
+    // Updatre the uptime variable before transmitting
+    uptimeuS = millis();
+
+    messsagesTxRuntimeMessage(runtimeDataSoftware, &runtimeDataStructureSize);
 }
