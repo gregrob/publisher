@@ -7,4 +7,7 @@
 // MQTT topic definition for module runtime
 #define MESSAGES_TX_MQTT_TOPIC_MODULE_RUNTIME   ("module runtime")
 
+// MQTT topic definition for module wifi
+#define MESSAGES_TX_MQTT_TOPIC_MODULE_WIFI      ("module wifi")
+
 #endif

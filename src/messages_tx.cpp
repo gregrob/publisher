@@ -26,6 +26,9 @@ static const char* messageMqttTopicModuleSoftware = MESSAGES_TX_MQTT_TOPIC_MODUL
 // MQTT topic for module runtime
 static const char* messageMqttTopicModuleRuntime = MESSAGES_TX_MQTT_TOPIC_MODULE_RUNTIME;
 
+// MQTT topic for module wifi
+static const char* messageMqttTopicModuleWifi = MESSAGES_TX_MQTT_TOPIC_MODULE_WIFI;
+
 
 /**
     Transmit a version message.
@@ -68,4 +71,28 @@ void messsagesTxRuntimeMessage(const runtimeData * const runtimeDataStructurePtr
     
     // Transmit the message
     mqttMessageSendRaw(messageMqttTopicModuleRuntime, messageToSend);   
+}
+
+
+/**
+    Transmit a wifi message.
+    Convert the message structure into JSON format here.
+*/
+void messsagesTxWifiMessage(const wifiData * const wifiDataStructurePtr) {
+  
+    // Clear the JSON object
+    doc.clear();
+   
+    // Populate the date (manually because of mixed types)
+    doc[wifiDataStructurePtr->ipAddressName] = wifiDataStructurePtr->ipAddressDataPtr;
+    doc[wifiDataStructurePtr->gatewayAddressName] = wifiDataStructurePtr->gatewayAddressDataPtr;
+    doc[wifiDataStructurePtr->subnetMaskName] = wifiDataStructurePtr->subnetMaskDataPtr;
+    doc[wifiDataStructurePtr->macAddressName] = wifiDataStructurePtr->macAddressDataPtr;
+    doc[wifiDataStructurePtr->rssiName] = *wifiDataStructurePtr->rssiDataPtr;
+
+    // Searilise the JSON string
+    serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
+    
+    // Transmit the message
+    mqttMessageSendRaw(messageMqttTopicModuleWifi, messageToSend);   
 }
