@@ -97,6 +97,7 @@ void messsagesTxWifiMessage(const wifiData * const wifiDataStructurePtr) {
     doc.clear();
    
     // Populate the date (manually because of mixed types)
+    doc[wifiDataStructurePtr->ssidName] = wifiDataStructurePtr->ssidDataPtr;
     doc[wifiDataStructurePtr->ipAddressName] = wifiDataStructurePtr->ipAddressDataPtr;
     doc[wifiDataStructurePtr->gatewayAddressName] = wifiDataStructurePtr->gatewayAddressDataPtr;
     doc[wifiDataStructurePtr->subnetMaskName] = wifiDataStructurePtr->subnetMaskDataPtr;

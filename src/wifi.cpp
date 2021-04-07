@@ -26,13 +26,17 @@ const char* apPassword = WIFI_AP_PASSWORD;
 // Size of a NIC char buffer
 #define WIFI_BUFFER_SIZE_NIC    (6)
 
-
+// Size of a SSID char buffer
+#define WIFI_BUFFER_SIZE_SSID   (33)
 
 // String size for a IP address
 #define WIFI_IP_BUFFER_SIZE     (16)
 
 // String size for a MAC address
 #define WIFI_MAC_BUFFER_SIZE    (18)
+
+// Name for the ssid
+#define WIFI_NAME_SSID          ("ssid")
 
 // Name for the ip
 #define WIFI_NAME_IP            ("ip")
@@ -49,6 +53,8 @@ const char* apPassword = WIFI_AP_PASSWORD;
 // Name for the rssi
 #define WIFI_NAME_RSSI          ("rssi")
 
+// SSID connected
+static char ssidString[WIFI_BUFFER_SIZE_SSID];
 
 // IP address
 static char ipString[WIFI_IP_BUFFER_SIZE];
@@ -67,7 +73,8 @@ static long rssi;
 
 
 // Wifi data for this software
-static wifiData wifiDataSoftware = {WIFI_NAME_IP,           ipString,
+static wifiData wifiDataSoftware = {WIFI_NAME_SSID,         ssidString,
+                                    WIFI_NAME_IP,           ipString,
                                     WIFI_NAME_GATEWAY,      gatewayString,
                                     WIFI_NAME_SUBNET_MASK,  subnetMaskString,
                                     WIFI_NAME_MAC,          macString,
@@ -267,6 +274,7 @@ void resetWifi() {
 void wifiTransmitWifiMessage(void) {   
 
     // Update the IP, gateway, subnet mask, MAC, and RSSI variables before transmitting
+    strcpy(ssidString, WiFi.SSID().c_str());
     strcpy(ipString, WiFi.localIP().toString().c_str());
     strcpy(gatewayString, WiFi.gatewayIP().toString().c_str());
     strcpy(subnetMaskString, WiFi.subnetMask().toString().c_str());

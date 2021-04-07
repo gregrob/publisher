@@ -3,6 +3,8 @@
 
 // Structure for wifi data
 typedef struct {
+    const char*   ssidName;
+    const char*   ssidDataPtr;
     const char*   ipAddressName;
     const char*   ipAddressDataPtr;
     const char*   gatewayAddressName;
