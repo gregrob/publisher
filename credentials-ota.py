@@ -1,12 +1,14 @@
 Import ("env")
 
 import re
+import platform
 
+print("OS is " + platform.system() + ".")
 print("Finding and exporting OTA password...")
 
 pattern = re.compile("#define OTA_PASSWORD\s*" + '"' + "(.*)" + '"')
 
-for i, line in enumerate(open('include\credentials.h')):
+for i, line in enumerate(open('include/credentials.h')):
     for match in re.finditer(pattern, line):
         print('Found OTA_PASSWORD on line %s: %s' % (i+1, match.group(1)))
         break
