@@ -8,6 +8,7 @@
 #include "mqtt.h"
 #include "alarm.h"
 #include "runtime.h"
+#include "outputs.h"
 
 
 // Local function definitions
@@ -25,23 +26,31 @@ static HardwareSerial *alarmSerialPort;
 
 // Create tasks
 Task wifiStatus(30000, TASK_FOREVER, &checkWifi);
-Task mqttClientTask(1000, TASK_FOREVER, &mqttClientLoop);
+Task mqttClientTask(100, TASK_FOREVER, &mqttClientLoop);
 Task mqttMessageTask(10000, TASK_FOREVER, &mqttMessageLoop);
 
 Task alarmTriggerDebounceTask(100, TASK_FOREVER, &alarmTriggerDebounce);
-Task alarmOneShotTask(100, TASK_FOREVER, &alarmHandleOneShot);
 
-Task periodicMessageTxTask(30000, TASK_FOREVER, &periodicMessageTx);
+Task taskOutputsCyclic(OUTPUTS_CYCLIC_RATE, TASK_FOREVER, &outputsCyclicTask);
+Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 
 
 void setup(void) {
+    // Setup the outputs first
+    outputsInit();
+    //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);
+    //outputsSetOutput(wifiCfg, flash, 1000, 0, 1, 10);
+
+    //outputsSetOutput(wifiRun, {flash, 0, 10, 1000, 1});
+    //outputsSetOutput(wifiCfg, {flash, 1000, 1, 0, 10});
+
     // Setup serial
     debugSerialPort = debugSetSerial(&Serial1);
     debugSerialPort->begin(115200);
     debugSerialPort->println();
     
     // Set up the alarm interface
-    alarmSerialPort = alarmSetup(&Serial, D6);
+    alarmSerialPort = alarmSetup(&Serial);
     //Put the serial pins on D7 = Rx and D8 = Tx.
     alarmSerialPort->swap();
     
@@ -60,18 +69,18 @@ void setup(void) {
     scheduler.addTask(mqttMessageTask);
 
     scheduler.addTask(alarmTriggerDebounceTask);
-    scheduler.addTask(alarmOneShotTask);
     
-    scheduler.addTask(periodicMessageTxTask);
+    scheduler.addTask(taskOutputsCyclic);
+    scheduler.addTask(taskPeriodicMessageTx);
 
     wifiStatus.enable();
     mqttClientTask.enable();
     mqttMessageTask.enable();
     
     alarmTriggerDebounceTask.enable();
-    alarmOneShotTask.enable();
 
-    periodicMessageTxTask.enable();
+    taskOutputsCyclic.enable();
+    taskPeriodicMessageTx.enable();
 
     randomSeed(micros());
 }

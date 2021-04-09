@@ -8,6 +8,7 @@
 #include "wifi.h"
 #include "mqtt.h"
 #include "alarm.h"
+#include "outputs.h"
 
 // Definitions
 #define MQTT_PORT               (1883)
@@ -74,6 +75,14 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
 
                     resetWifi();
                 }
+                //unsigned int a = doc["command"];
+                //unsigned int b = doc["hi"];
+                //unsigned int c = doc["hi-tim"];
+                //unsigned int d = doc["lo"];
+                //unsigned int e = doc["lo-tim"];
+                //outputsSetOutput(wifiRun, {(outputControlType)a, b, c, d, e});
+                //outputsSetOutput(wifiCfg, {(outputControlType)a, b, c, d, e});
+                //Serial1.println(String() + a + " " + b + " " + c + " " + d + " " + e + " ");
             }
 
             // Alarm command message (+1 because of /)
@@ -82,7 +91,7 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
                 // Check if the json contains a valid text value
                 if (doc.containsKey(JSON_DOC_VAR_ARMDISARM)) {               
                     String rxText = doc[JSON_DOC_VAR_ARMDISARM];
-                    alarmFireOneShot(5, 5);
+                    alarmFireOneShot();
 
                     debugMessage = (String() + "MQTT found JSON key: " + JSON_DOC_VAR_ARMDISARM);
                     debugLog(&debugMessage, info);

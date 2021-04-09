@@ -23,35 +23,19 @@ typedef struct {
   const char*   alarmPanelStateMsg;
 } alarmStateMsgDefinitions;
 
-// Structure for one shot
-typedef struct {
-  char  onTime;
-  char  offTime;
-} alarmOneShot;
-
 /**
     Alarm module setup.
     Sets up the serial bus.
 
     @param[in]     serialPort pointer to the serial port to be used for the alarm.
-    @param[in]     setArmDisarmPin pin to use for arm / diarm of the alarm.
     @return        pointer to the serial port used for the alarm.
 */
-HardwareSerial* const alarmSetup(HardwareSerial* const serialPort, uint8_t setArmDisarmPin);
-
-/**
-    Handle the one shot on the alarm arm / disarm output.
-    Call at a cyclic rate.
-*/
-void alarmHandleOneShot(void);
+HardwareSerial* const alarmSetup(HardwareSerial* const serialPort);
 
 /**
     Fire the one shot on the alarm arm / disarm output.
-    
-    @param[in]     onTime on duration in time unit of the handler call rate.
-    @param[in]     offTime off duration in time unit of the handler call rate.
 */
-void alarmFireOneShot(unsigned char onTime, unsigned char offTime);
+void alarmFireOneShot(void);
 
 /**
     Alarm background task.
