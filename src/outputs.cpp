@@ -6,17 +6,19 @@
 
 // Structure for output configuration data
 typedef struct {
-    const uint8_t               outputPin;
-    const int                   outputInitialLevel;    
-    outputCycleConfiguration    outputCurrentCycle;
-    outputCycleConfiguration    outputNextCycle;
+    const char *                name;
+    const uint8_t               pin;
+
+    const int                   initialLevel;    
+    outputCycleConfiguration    currentCycle;
+    outputCycleConfiguration    nextCycle;
 } outputConfiguration;
 
 
 // Output configuraiton structure
-static outputConfiguration moduleOutputConfiguration[] = {{OUTPUTS_PIN_MAP_WIFI_CFG,   LOW, {direct, 0, 0, 0, 0}, {direct, 0, 0, 0, 0}},
-                                                          {OUTPUTS_PIN_MAP_WIFI_RUN,   LOW, {direct, 0, 0, 0, 0}, {direct, 0, 0, 0, 0}},
-                                                          {OUTPUTS_PIN_MAP_ALARM_CTRL, LOW, {direct, 0, 0, 0, 0}, {direct, 0, 0, 0, 0}}
+static outputConfiguration moduleOutputConfiguration[] = {{"wifi config mode led", OUTPUTS_PIN_MAP_WIFI_CFG,   LOW, {direct, 0, 0, 0, 0}, {direct, 0, 0, 0, 0}},
+                                                          {"wifi connected led",   OUTPUTS_PIN_MAP_WIFI_RUN,   LOW, {direct, 0, 0, 0, 0}, {direct, 0, 0, 0, 0}},
+                                                          {"alarm control",        OUTPUTS_PIN_MAP_ALARM_CTRL, LOW, {direct, 0, 0, 0, 0}, {direct, 0, 0, 0, 0}}
 };
 
 
@@ -27,8 +29,8 @@ void outputsInit(void) {
 
     // Initialise all outputs to their initial state
     for(unsigned int i = 0; i < (sizeof(moduleOutputConfiguration)/sizeof(moduleOutputConfiguration[0])); i++) {
-        analogWrite(moduleOutputConfiguration[i].outputPin, moduleOutputConfiguration[i].outputInitialLevel);
-        pinMode(moduleOutputConfiguration[i].outputPin, OUTPUT);
+        analogWrite(moduleOutputConfiguration[i].pin, moduleOutputConfiguration[i].initialLevel);
+        pinMode(moduleOutputConfiguration[i].pin, OUTPUT);
     }
 
 }
@@ -43,44 +45,44 @@ void outputsCyclicTask(void) {
     for(unsigned int i = 0; i < (sizeof(moduleOutputConfiguration)/sizeof(moduleOutputConfiguration[0])); i++) {
 
         // Handle the individual output modes
-        switch(moduleOutputConfiguration[i].outputCurrentCycle.mode) {
+        switch(moduleOutputConfiguration[i].currentCycle.mode) {
             
             case oneshot:
                 // High timer running
-                if(moduleOutputConfiguration[i].outputCurrentCycle.durationHigh > 0) {
-                    moduleOutputConfiguration[i].outputCurrentCycle.durationHigh--;
-                    analogWrite(moduleOutputConfiguration[i].outputPin, moduleOutputConfiguration[i].outputCurrentCycle.levelHigh);
+                if(moduleOutputConfiguration[i].currentCycle.durationHigh > 0) {
+                    moduleOutputConfiguration[i].currentCycle.durationHigh--;
+                    analogWrite(moduleOutputConfiguration[i].pin, moduleOutputConfiguration[i].currentCycle.levelHigh);
                 }
 
                 // Low timer running
-                else if (moduleOutputConfiguration[i].outputCurrentCycle.durationLow > 0) {
-                    moduleOutputConfiguration[i].outputCurrentCycle.durationLow--;
-                    analogWrite(moduleOutputConfiguration[i].outputPin, moduleOutputConfiguration[i].outputCurrentCycle.levelLow);
+                else if (moduleOutputConfiguration[i].currentCycle.durationLow > 0) {
+                    moduleOutputConfiguration[i].currentCycle.durationLow--;
+                    analogWrite(moduleOutputConfiguration[i].pin, moduleOutputConfiguration[i].currentCycle.levelLow);
 
                     // Low timer expired so turn everything off and back to direct mode (i.e. idle)
-                    if(moduleOutputConfiguration[i].outputCurrentCycle.durationLow == 0) {
-                        moduleOutputConfiguration[i].outputCurrentCycle = {direct, 0, 0, 0, 0};
-                        moduleOutputConfiguration[i].outputNextCycle = {direct, 0, 0, 0, 0};
-                        analogWrite(moduleOutputConfiguration[i].outputPin, 0);
+                    if(moduleOutputConfiguration[i].currentCycle.durationLow == 0) {
+                        moduleOutputConfiguration[i].currentCycle = {direct, 0, 0, 0, 0};
+                        moduleOutputConfiguration[i].nextCycle = {direct, 0, 0, 0, 0};
+                        analogWrite(moduleOutputConfiguration[i].pin, 0);
                     }
                 }
                 break;
 
             case flash:
                 // High timer running
-                if(moduleOutputConfiguration[i].outputCurrentCycle.durationHigh > 0) {
-                    moduleOutputConfiguration[i].outputCurrentCycle.durationHigh--;
-                    analogWrite(moduleOutputConfiguration[i].outputPin, moduleOutputConfiguration[i].outputCurrentCycle.levelHigh);
+                if(moduleOutputConfiguration[i].currentCycle.durationHigh > 0) {
+                    moduleOutputConfiguration[i].currentCycle.durationHigh--;
+                    analogWrite(moduleOutputConfiguration[i].pin, moduleOutputConfiguration[i].currentCycle.levelHigh);
                 }
 
                 // Low timer running
-                else if (moduleOutputConfiguration[i].outputCurrentCycle.durationLow > 0) {
-                    moduleOutputConfiguration[i].outputCurrentCycle.durationLow--;
-                    analogWrite(moduleOutputConfiguration[i].outputPin, moduleOutputConfiguration[i].outputCurrentCycle.levelLow);
+                else if (moduleOutputConfiguration[i].currentCycle.durationLow > 0) {
+                    moduleOutputConfiguration[i].currentCycle.durationLow--;
+                    analogWrite(moduleOutputConfiguration[i].pin, moduleOutputConfiguration[i].currentCycle.levelLow);
 
                     // Low timer expired so set-up next cycle (which could be oneshot or flash)
-                    if(moduleOutputConfiguration[i].outputCurrentCycle.durationLow == 0) {
-                        moduleOutputConfiguration[i].outputCurrentCycle = moduleOutputConfiguration[i].outputNextCycle;
+                    if(moduleOutputConfiguration[i].currentCycle.durationLow == 0) {
+                        moduleOutputConfiguration[i].currentCycle = moduleOutputConfiguration[i].nextCycle;
                     }
                 }
                 break;
@@ -88,7 +90,7 @@ void outputsCyclicTask(void) {
             case direct:
             default:
                 // Always set-up next cycle in direct (so output can transition to other modes)
-                moduleOutputConfiguration[i].outputCurrentCycle = moduleOutputConfiguration[i].outputNextCycle;
+                moduleOutputConfiguration[i].currentCycle = moduleOutputConfiguration[i].nextCycle;
                 break;
         }
     }
@@ -104,7 +106,7 @@ void outputsCyclicTask(void) {
 void outputsSetOutput(const outputIndex output, const outputCycleConfiguration cycleConfiguration) {
 
     // Make sure a valid output is selected and levels are within range
-    if (((unsigned int) output < LAST_ITEM) && 
+    if (((unsigned int) output < outputIndex::OP_LAST_ITEM) && 
         (cycleConfiguration.levelHigh <= PWMRANGE) && 
         (cycleConfiguration.levelLow <= PWMRANGE)) {
         
@@ -112,21 +114,21 @@ void outputsSetOutput(const outputIndex output, const outputCycleConfiguration c
         switch(cycleConfiguration.mode) {
             
             case oneshot:
-                moduleOutputConfiguration[output].outputNextCycle = cycleConfiguration;
+                moduleOutputConfiguration[output].nextCycle = cycleConfiguration;
                 break;
 
             case flash:
-                moduleOutputConfiguration[output].outputNextCycle = cycleConfiguration;
+                moduleOutputConfiguration[output].nextCycle = cycleConfiguration;
                 break;
 
             case direct:
             default:
                 // For direct operations, take control immedately from here
-                moduleOutputConfiguration[output].outputNextCycle = cycleConfiguration;
-                moduleOutputConfiguration[output].outputCurrentCycle = cycleConfiguration;
+                moduleOutputConfiguration[output].nextCycle = cycleConfiguration;
+                moduleOutputConfiguration[output].currentCycle = cycleConfiguration;
                 
                 // Set-up the PWM output now
-                analogWrite(moduleOutputConfiguration[output].outputPin, moduleOutputConfiguration[output].outputCurrentCycle.levelHigh);
+                analogWrite(moduleOutputConfiguration[output].pin, moduleOutputConfiguration[output].currentCycle.levelHigh);
                 break;
         }
     }

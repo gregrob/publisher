@@ -39,7 +39,7 @@ Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 void testo() {
     //Serial1.println(inputsReadInput(resetSw));
 
-    if(inputsReadInput(resetSw)) {ESP.restart();}
+    //if(inputsReadInput(resetSw)) {ESP.restart();}
 }
 
 Task switcher(1000, TASK_FOREVER, &testo);

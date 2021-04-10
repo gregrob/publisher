@@ -11,7 +11,7 @@ enum outputIndex {
     wifiCfg       = 0,
     wifiRun       = 1,
     alarmCtrl     = 2,
-    LAST_ITEM     = 3
+    OP_LAST_ITEM  = 3
 };
 
 // Enumerator for output control types
