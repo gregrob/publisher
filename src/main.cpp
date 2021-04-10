@@ -8,6 +8,7 @@
 #include "mqtt.h"
 #include "alarm.h"
 #include "runtime.h"
+#include "inputs.h"
 #include "outputs.h"
 
 
@@ -31,13 +32,23 @@ Task mqttMessageTask(10000, TASK_FOREVER, &mqttMessageLoop);
 
 Task alarmTriggerDebounceTask(100, TASK_FOREVER, &alarmTriggerDebounce);
 
+Task taskInputsCyclic(INPUTS_CYCLIC_RATE, TASK_FOREVER, &inputsCyclicTask);
 Task taskOutputsCyclic(OUTPUTS_CYCLIC_RATE, TASK_FOREVER, &outputsCyclicTask);
 Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 
+void testo() {
+    //Serial1.println(inputsReadInput(resetSw));
+
+    if(inputsReadInput(resetSw)) {ESP.restart();}
+}
+
+Task switcher(1000, TASK_FOREVER, &testo);
 
 void setup(void) {
-    // Setup the outputs first
+    // Setup the IO first
+    inputsInit();
     outputsInit();
+
     //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);
     //outputsSetOutput(wifiCfg, flash, 1000, 0, 1, 10);
 
@@ -70,6 +81,7 @@ void setup(void) {
 
     scheduler.addTask(alarmTriggerDebounceTask);
     
+    scheduler.addTask(taskInputsCyclic);
     scheduler.addTask(taskOutputsCyclic);
     scheduler.addTask(taskPeriodicMessageTx);
 
@@ -79,8 +91,14 @@ void setup(void) {
     
     alarmTriggerDebounceTask.enable();
 
+    taskInputsCyclic.enable();
     taskOutputsCyclic.enable();
     taskPeriodicMessageTx.enable();
+
+    scheduler.addTask(switcher);
+    switcher.enable();
+
+
 
     randomSeed(micros());
 }
@@ -107,7 +125,7 @@ void periodicMessageTx(void) {
     versionTransmitVersionMessage();
     runtimeTransmitRuntimeMessage();
     wifiTransmitWifiMessage();
-
+    
     // Only handle alarm messages if this is an alarm unit
     if (getWiFiModuleDetails()->moduleHostType == alarmModule) {
         alarmTransmitAlarmAllMessage();
