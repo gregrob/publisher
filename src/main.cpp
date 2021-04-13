@@ -8,6 +8,8 @@
 #include "mqtt.h"
 #include "alarm.h"
 #include "runtime.h"
+
+#include "nvm.h"
 #include "inputs.h"
 #include "outputs.h"
 
@@ -45,7 +47,13 @@ void testo() {
 Task switcher(1000, TASK_FOREVER, &testo);
 
 void setup(void) {
-    // Setup the IO first
+    // Setup debug serial
+    debugSerialPort = debugSetSerial(&Serial1);
+    debugSerialPort->begin(115200);
+    debugSerialPort->println();    
+    
+    // Set up basic software
+    nvmInit();
     inputsInit();
     outputsInit();
 
@@ -54,11 +62,6 @@ void setup(void) {
 
     //outputsSetOutput(wifiRun, {flash, 0, 10, 1000, 1});
     //outputsSetOutput(wifiCfg, {flash, 1000, 1, 0, 10});
-
-    // Setup serial
-    debugSerialPort = debugSetSerial(&Serial1);
-    debugSerialPort->begin(115200);
-    debugSerialPort->println();
     
     // Set up the alarm interface
     alarmSerialPort = alarmSetup(&Serial);
