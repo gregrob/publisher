@@ -10,6 +10,7 @@
 #include "runtime.h"
 
 #include "nvm.h"
+#include "nvm_cfg.h"
 #include "inputs.h"
 #include "outputs.h"
 
@@ -56,6 +57,18 @@ void setup(void) {
     nvmInit();
     inputsInit();
     outputsInit();
+
+    // Pointer to the RAM mirror
+    nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror and get its size
+    (void)nvmGetRamMirrorPointerRW(&ramMirrorPtr);
+
+    /// DELETE ME SOON
+    Serial1.println(ramMirrorPtr->base.footer.buffer,HEX);
+    Serial1.println(ramMirrorPtr->base.mqttTopicRoot);
+    Serial1.println(ramMirrorPtr->ext1.ledDimmingLevel);
+
 
     //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);
     //outputsSetOutput(wifiCfg, flash, 1000, 0, 1, 10);
