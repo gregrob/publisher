@@ -9,7 +9,6 @@
 #include "alarm.h"
 #include "runtime.h"
 
-#include "nvm.h"
 #include "nvm_cfg.h"
 #include "inputs.h"
 #include "outputs.h"
