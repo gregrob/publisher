@@ -65,12 +65,12 @@ void setup(void) {
     (void)nvmGetRamMirrorPointerRW(&ramMirrorPtr);
 
     /// DELETE ME SOON
-    Serial1.println(ramMirrorPtr->base.footer.buffer,HEX);
-    Serial1.println(ramMirrorPtr->base.mqttTopicRoot);
-    Serial1.println(ramMirrorPtr->ext1.ledDimmingLevel);
+    Serial1.println(ramMirrorPtr->alarm.footer.buffer,HEX);
+    Serial1.println(ramMirrorPtr->mqtt.mqttTopicRoot);
+    Serial1.println(ramMirrorPtr->io.ledDimmingLevel);
 
-    strcpy(ramMirrorPtr->base.mqttTopicRoot, "cheese");
-    nvmUpdateRamMirrorCrcByName(nvmBaseStruc);
+    strcpy(ramMirrorPtr->mqtt.mqttTopicRoot, "cheese");
+    nvmUpdateRamMirrorCrcByName(nvmMqttStruc);
     nvmComittRamMirror();
     
     //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);

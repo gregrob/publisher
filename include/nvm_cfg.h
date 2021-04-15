@@ -13,52 +13,66 @@
 #define NVM_MAX_LENGTH_TOPIC        (32)
 
 // Maximum address length for the home address
-#define NVM_MAX_LENGTH_ADDRESS      (64)
+#define NVM_MAX_LENGTH_ADDRESS      (32)
 
 
 // NVM subconfiguration index
 typedef enum {
-    nvmBaseStruc     = 0,
-    nvmExt1Struc     = 1, 
-    nvmExt2Struc     = 2,
+    nvmNetworkStruc  = 0,
+    nvmMqttStruc     = 1,
+    nvmIOStruc       = 2,
+    nvmAlarmStruc    = 3,
+    nvmExt1Struc     = 4, 
 
     nvmNumberOfTypes
 } nvmSubConfigIndex;
 
-// Base NVM structure
-typedef struct __attribute__ ((packed)) {
-     char                    mqttUser[NVM_MAX_LENGTH_USER];             // MQTT user name
-     char                    mqttPassword[NVM_MAX_LENGTH_PASSWORD];     // MQTT password
-     char                    mqttTopicRoot[NVM_MAX_LENGTH_TOPIC];       // MQTT root topic
-     
+// Network NVM structure
+typedef struct __attribute__ ((packed)) {    
      char                    otaPassword[NVM_MAX_LENGTH_PASSWORD];      // OTA password
      char                    wifiAPPassword[NVM_MAX_LENGTH_PASSWORD];   // Configuraitone mode WiFi AP password
 
+     nvmFooterCrc            footer;
+} nvmSubConfigNetwork;
+
+// MQTT NVM structure
+typedef struct __attribute__ ((packed)) {    
+     char                    mqttUser[NVM_MAX_LENGTH_USER];             // MQTT user name
+     char                    mqttPassword[NVM_MAX_LENGTH_PASSWORD];     // MQTT password
+     char                    mqttTopicRoot[NVM_MAX_LENGTH_TOPIC];       // MQTT root topic
+
+     nvmFooterCrc            footer;
+} nvmSubConfigMqtt;
+
+// IO NVM structure
+typedef struct __attribute__ ((packed)) {
+     unsigned int           ledDimmingLevel;                            // LED Dimming Level
+     
+     nvmFooterCrc           footer;
+} nvmSubConfigIO;
+
+// Alarm NVM structure
+typedef struct __attribute__ ((packed)) {
      char                    homeAddress[NVM_MAX_LENGTH_ADDRESS];       // Home address for the alarm
     
      nvmFooterCrc            footer;
-} nvmSubConfigBase;
+} nvmSubConfigAlarm;
 
 // Extensions 1 NVM structure
 typedef struct __attribute__ ((packed)) {
-     unsigned int           ledDimmingLevel;     // LED Dimming Level
-     
+     unsigned char          char1;                                      // Character 1
+     unsigned char          char2;                                      // Character 2
+
      nvmFooterCrc           footer;
 } nvmSubConfigExt1;
 
-// Extensions 2 NVM structure
-typedef struct __attribute__ ((packed)) {
-     unsigned char          char1;               // Character 1
-     unsigned char          char2;               // Character 2
-
-     nvmFooterCrc           footer;
-} nvmSubConfigExt2;
-
 // Complete NVM structure
 typedef struct __attribute__ ((packed)) {
-    nvmSubConfigBase        base;                // Base NVM structure
-    nvmSubConfigExt1        ext1;                // Extensions 1
-    nvmSubConfigExt2        ext2;                // Extensions 2
+    nvmSubConfigNetwork     network;             // Network settings
+    nvmSubConfigMqtt        mqtt;                // MQTT settings
+    nvmSubConfigIO          io;                  // IO settings
+    nvmSubConfigAlarm       alarm;               // Alarm settings
+    nvmSubConfigExt1        ext1;                // Extensions 1 settings
 } nvmCompleteStructure;
 
 

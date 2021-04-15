@@ -7,14 +7,20 @@
 // NVM ROM default for the CRC footer in every NVM structure
 static const nvmFooterCrc nvmFooterCrcDefault = {NVM_BUFFER_DEFAULT, NVM_CRC_DEFAULT};
 
-// NVM ROM defaults for nvmSubConfigBase
-static const nvmSubConfigBase nvmSubConfigBaseDefault = {"testuser", "password", "publisher", "password", "password", "Home Address", nvmFooterCrcDefault};
+// NVM ROM defaults for nvmSubConfigNetwork
+static const nvmSubConfigNetwork nvmSubConfigNetworkDefault = {"password", "password", nvmFooterCrcDefault};
+
+// NVM ROM defaults for nvmSubConfigMqtt
+static const nvmSubConfigMqtt nvmSubConfigMqttDefault = {"testuser", "password", "publisher", nvmFooterCrcDefault};
+
+// NVM ROM defaults for nvmSubConfigIO
+static const nvmSubConfigIO nvmSubConfigIODefault = {PWMRANGE, nvmFooterCrcDefault};
+
+// NVM ROM defaults for nvmSubConfigAlarm
+static const nvmSubConfigAlarm nvmSubConfigAlarmDefault = {"Home Address", nvmFooterCrcDefault};
 
 // NVM ROM defaults for nvmSubConfigExt1
-static const nvmSubConfigExt1 nvmSubConfigExt1Default = {PWMRANGE, nvmFooterCrcDefault};
-
-// NVM ROM defaults for nvmSubConfigExt2
-static const nvmSubConfigExt2 nvmSubConfigExt2Default = {'G', 'R', nvmFooterCrcDefault};
+static const nvmSubConfigExt1 nvmSubConfigExt1Default = {'G', 'R', nvmFooterCrcDefault};
 
 // NVM RAM mirror
 static nvmCompleteStructure nvmRamMirror;
@@ -23,26 +29,40 @@ static nvmCompleteStructure nvmRamMirror;
 static const uint32_t nvmRamMirrorSizeBytes = (sizeof(nvmRamMirror) / sizeof(uint8_t));
 
 // NVM configuration
-static const nvmStructureConfig nvmConfig[] = { // Memory configuration for nvmSubConfigBase
-                                                         {(uint8_t * const) & nvmRamMirror.base, 
-                                                          (const uint8_t * const) & nvmSubConfigBaseDefault,
-                                                          (uint8_t * const) & nvmRamMirror.base.footer.crc,
-                                                          ((sizeof(nvmRamMirror.base) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
-                                                          true},
+static const nvmStructureConfig nvmConfig[] = { // Memory configuration for nvmSubConfigNetwork
+                                                {(uint8_t * const) & nvmRamMirror.network, 
+                                                (const uint8_t * const) & nvmSubConfigNetworkDefault,
+                                                (uint8_t * const) & nvmRamMirror.network.footer.crc,
+                                                ((sizeof(nvmRamMirror.network) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
+                                                true},
 
-                                                         // Memory configuration for nvmSubConfigExt1
-                                                         {(uint8_t * const) & nvmRamMirror.ext1,
-                                                          (const uint8_t * const) & nvmSubConfigExt1Default,
-                                                          (uint8_t * const) & nvmRamMirror.ext1.footer.crc,
-                                                          ((sizeof(nvmRamMirror.ext1) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
-                                                          true},
-                                                         
-                                                         // Memory configuration for nvmSubConfigExt2
-                                                         {(uint8_t * const) & nvmRamMirror.ext2,
-                                                          (const uint8_t * const) & nvmSubConfigExt2Default,
-                                                          (uint8_t * const) & nvmRamMirror.ext2.footer.crc,
-                                                          ((sizeof(nvmRamMirror.ext2) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
-                                                          false}
+                                                // Memory configuration for nvmSubConfigMqtt
+                                                {(uint8_t * const) & nvmRamMirror.mqtt, 
+                                                (const uint8_t * const) & nvmSubConfigMqttDefault,
+                                                (uint8_t * const) & nvmRamMirror.mqtt.footer.crc,
+                                                ((sizeof(nvmRamMirror.mqtt) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
+                                                true},
+
+                                                // Memory configuration for nvmSubConfigIO
+                                                {(uint8_t * const) & nvmRamMirror.io,
+                                                (const uint8_t * const) & nvmSubConfigIODefault,
+                                                (uint8_t * const) & nvmRamMirror.io.footer.crc,
+                                                ((sizeof(nvmRamMirror.io) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
+                                                true},
+
+                                                // Memory configuration for nvmSubConfigAlarm
+                                                {(uint8_t * const) & nvmRamMirror.alarm, 
+                                                (const uint8_t * const) & nvmSubConfigAlarmDefault,
+                                                (uint8_t * const) & nvmRamMirror.alarm.footer.crc,
+                                                ((sizeof(nvmRamMirror.alarm) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
+                                                true},
+
+                                                // Memory configuration for nvmSubConfigExt1
+                                                {(uint8_t * const) & nvmRamMirror.ext1,
+                                                (const uint8_t * const) & nvmSubConfigExt1Default,
+                                                (uint8_t * const) & nvmRamMirror.ext1.footer.crc,
+                                                ((sizeof(nvmRamMirror.ext1) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
+                                                false}
 };
 
 // NVM configuration size (in elements)
