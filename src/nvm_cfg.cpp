@@ -48,6 +48,8 @@ static const nvmStructureConfig nvmConfig[] = { // Memory configuration for nvmS
 // NVM configuration size (in elements)
 static const uint32_t nvmConfigSizeElements = (sizeof(nvmConfig) / sizeof(nvmConfig[0]));
 
+// Make sure that NVM configuraiton structure is the same size as the index enum
+static_assert(nvmSubConfigIndex::nvmNumberOfTypes == nvmConfigSizeElements, "Mismatch number of elements between <enum nvmSubConfigIndex> and <nvmConfig>.");
 
 /**
     Set-up read / write pointer to the RAM mirror
@@ -80,4 +82,14 @@ const uint32_t nvmGetRamMirrorPointerRO(const nvmCompleteStructure ** activeNvmR
 const uint32_t nvmGetConfigPointerRO(const nvmStructureConfig ** activeNvmConfig) {
     *activeNvmConfig = &nvmConfig[0];
     return(nvmConfigSizeElements);
+}
+
+/**
+    Update named RAM mirror structure CRC based on the current structure contents.
+  
+    @param[in]     name name of the NVM structure the will have the CRC update.
+*/
+void nvmUpdateRamMirrorCrcByName(nvmSubConfigIndex name) {
+
+    nvmUpdateRamMirrorCrcByIndex(name);
 }

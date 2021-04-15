@@ -1,6 +1,7 @@
 #ifndef NVM_CFG_H
 #define NVM_CFG_H
 
+#include "nvm.h"
 
 // Maximum length for a password
 #define NVM_MAX_LENGTH_PASSWORD     (32)
@@ -14,6 +15,15 @@
 // Maximum address length for the home address
 #define NVM_MAX_LENGTH_ADDRESS      (64)
 
+
+// NVM subconfiguration index
+typedef enum {
+    nvmBaseStruc     = 0,
+    nvmExt1Struc     = 1, 
+    nvmExt2Struc     = 2,
+
+    nvmNumberOfTypes
+} nvmSubConfigIndex;
 
 // Base NVM structure
 typedef struct __attribute__ ((packed)) {
@@ -76,5 +86,11 @@ const uint32_t nvmGetRamMirrorPointerRO(const nvmCompleteStructure ** activeNvmR
 */
 const uint32_t nvmGetConfigPointerRO(const nvmStructureConfig ** activeNvmConfig);
 
+/**
+    Update named RAM mirror structure CRC based on the current structure contents.
+  
+    @param[in]     name name of the NVM structure the will have the CRC update.
+*/
+void nvmUpdateRamMirrorCrcByName(nvmSubConfigIndex name);
 
 #endif

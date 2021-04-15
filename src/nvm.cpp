@@ -41,6 +41,7 @@ static void nvmCorrupt(void) {
     Check the CRC's of all NVM structures.
     If there is corruption and correctDefaults is allowed, then recover and rewrite EEPROM.
     Assumes that RAM mirror is pre-populated from EEPROM.
+    This call is BLOCKING (can start writing the RAM mirrors to EEPROM).
 */
 static void nvmCheckIntegrity(void) {
     
@@ -98,10 +99,9 @@ static void nvmCheckIntegrity(void) {
                 // Copy the defaults to the RAM mirror
                 memcpy(nvmConfigPtr[i].addressRamMirror, nvmConfigPtr[i].addressRomDefault, nvmConfigPtr[i].length);
 
-                // Calculate the CRC and copy it to the RAM mirror
-                crcExpected = CRC32::calculate(nvmConfigPtr[i].addressRamMirror, nvmConfigPtr[i].length);
-                memcpy(nvmConfigPtr[i].addressCrc, &crcExpected, NVM_CRC_SIZE_BYTES);
-
+                // Update the CRC in the RAM mirror
+                nvmUpdateRamMirrorCrcByIndex(i);
+                
                 nvmUpdate = true;
 
                 // Debug message
@@ -113,15 +113,66 @@ static void nvmCheckIntegrity(void) {
 
     // If there was an NVM update, make sure it is comitted
     if (nvmUpdate == true) {
-        EEPROM.put(NVM_BASE_ADDRESS, *ramMirrorPtr);
-        EEPROM.commit();
+       nvmComittRamMirror();
     }
+}
+
+
+/**
+    Update indexed RAM mirror structure CRC based on the current structure contents.
+  
+    @param[in]     index index of the NVM structure the will have the CRC update.
+*/
+void nvmUpdateRamMirrorCrcByIndex(uint32_t index) {
+
+    // Pointer to the RAM mirror
+    nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRW(&ramMirrorPtr);
+    
+    // Pointer to the NVM configuration
+    const nvmStructureConfig * nvmConfigPtr;
+
+    // Set-up pointer to NVM configuration and get its size
+    const uint32_t nvmConfigSizePtr = nvmGetConfigPointerRO(&nvmConfigPtr);
+
+    // Calculated CRC
+    crc_t crcCalculated = 0;
+
+    // Make sure the index is within range
+    if(index < nvmConfigSizePtr) {
+        
+        // Calculate the CRC and copy it to the RAM mirror
+        crcCalculated = CRC32::calculate(nvmConfigPtr[index].addressRamMirror, nvmConfigPtr[index].length);
+        memcpy(nvmConfigPtr[index].addressCrc, &crcCalculated, NVM_CRC_SIZE_BYTES);
+    }
+}
+
+
+/**
+    Comitt the RAM mirror directly to NVM.
+    Before calling, make sure the appropiate structure CRC's have been updated.
+    This call is BLOCKING (writing the RAM mirrors to EEPROM).
+*/
+void nvmComittRamMirror(void) {
+
+    // Pointer to the RAM mirror
+    nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRW(&ramMirrorPtr);
+
+    // Write to EEPROM (blocking)
+    EEPROM.put(NVM_BASE_ADDRESS, *ramMirrorPtr);
+    EEPROM.commit();
 }
 
 
 /**
     Initialise the NVM module.
     Include initialisation of the RAM mirrors and recovery to defaults where allowed.
+    This call is BLOCKING (reading / populating the RAM mirrors from EEPROM).
 */
 void nvmInit(void) {
 

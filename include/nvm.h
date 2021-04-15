@@ -39,8 +39,23 @@ typedef struct {
 
 
 /**
+    Update indexed RAM mirror structure CRC based on the current structure contents.
+  
+    @param[in]     index index of the NVM structure the will have the CRC update.
+*/
+void nvmUpdateRamMirrorCrcByIndex(uint32_t index);
+
+/**
+    Comitt the RAM mirror directly to NVM.
+    Before calling, make sure the appropiate structure CRC's have been updated.
+    This call is BLOCKING (writing the RAM mirrors to EEPROM).
+*/
+void nvmComittRamMirror(void);
+
+/**
     Initialise the NVM module.
     Include initialisation of the RAM mirrors and recovery to defaults where allowed.
+    This call is BLOCKING (reading / populating the RAM mirrors from EEPROM).
 */
 void nvmInit(void);
 

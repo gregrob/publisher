@@ -69,7 +69,10 @@ void setup(void) {
     Serial1.println(ramMirrorPtr->base.mqttTopicRoot);
     Serial1.println(ramMirrorPtr->ext1.ledDimmingLevel);
 
-
+    strcpy(ramMirrorPtr->base.mqttTopicRoot, "cheese");
+    nvmUpdateRamMirrorCrcByName(nvmBaseStruc);
+    nvmComittRamMirror();
+    
     //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);
     //outputsSetOutput(wifiCfg, flash, 1000, 0, 1, 10);
 
