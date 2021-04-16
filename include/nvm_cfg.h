@@ -9,6 +9,9 @@
 // Maximum length for a user name
 #define NVM_MAX_LENGTH_USER         (32)
 
+// Maximum length for server address
+#define NVM_MAX_LENGTH_URL          (32)
+
 // Maximum length for the MQTT topic
 #define NVM_MAX_LENGTH_TOPIC        (32)
 
@@ -37,6 +40,7 @@ typedef struct __attribute__ ((packed)) {
 
 // MQTT NVM structure
 typedef struct __attribute__ ((packed)) {    
+     char                    mqttServer[NVM_MAX_LENGTH_URL];            // MQTT server
      char                    mqttUser[NVM_MAX_LENGTH_USER];             // MQTT user name
      char                    mqttPassword[NVM_MAX_LENGTH_PASSWORD];     // MQTT password
      char                    mqttTopicRoot[NVM_MAX_LENGTH_TOPIC];       // MQTT root topic

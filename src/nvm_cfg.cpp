@@ -10,7 +10,7 @@ static const nvmFooterCrc nvmFooterCrcDefault = {NVM_BUFFER_DEFAULT, NVM_CRC_DEF
 static const nvmSubConfigNetwork nvmSubConfigNetworkDefault = {"password", "password", nvmFooterCrcDefault};
 
 // NVM ROM defaults for nvmSubConfigMqtt
-static const nvmSubConfigMqtt nvmSubConfigMqttDefault = {"testuser", "password", "publisher", nvmFooterCrcDefault};
+static const nvmSubConfigMqtt nvmSubConfigMqttDefault = {"swarm.max.lan", "testuser", "password", "publisher", nvmFooterCrcDefault};
 
 // NVM ROM defaults for nvmSubConfigIO
 static const nvmSubConfigIO nvmSubConfigIODefault = {PWMRANGE, nvmFooterCrcDefault};
