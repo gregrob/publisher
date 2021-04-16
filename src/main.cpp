@@ -47,37 +47,20 @@ void testo() {
 Task switcher(1000, TASK_FOREVER, &testo);
 
 void setup(void) {
-    // Setup debug serial
+    // STEP 1 - Setup debug serial
     debugSerialPort = debugSetSerial(&Serial1);
     debugSerialPort->begin(115200);
     debugSerialPort->println();    
     
-    // Set up basic software
+    // STEP 2 - Set up basic software
     nvmInit();
     inputsInit();
     outputsInit();
 
-    // Pointer to the RAM mirror
-    nvmCompleteStructure * ramMirrorPtr;
-
-    // Set-up pointer to RAM mirror and get its size
-    (void)nvmGetRamMirrorPointerRW(&ramMirrorPtr);
-
-    /// DELETE ME SOON
-    Serial1.println(ramMirrorPtr->alarm.footer.buffer,HEX);
-    Serial1.println(ramMirrorPtr->mqtt.mqttTopicRoot);
-    Serial1.println(ramMirrorPtr->io.ledDimmingLevel);
-
-    strcpy(ramMirrorPtr->mqtt.mqttTopicRoot, "cheese");
-    nvmUpdateRamMirrorCrcByName(nvmMqttStruc);
-    nvmComittRamMirror();
-    
     //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);
     //outputsSetOutput(wifiCfg, flash, 1000, 0, 1, 10);
 
-    //outputsSetOutput(wifiRun, {flash, 0, 10, 1000, 1});
-    //outputsSetOutput(wifiCfg, {flash, 1000, 1, 0, 10});
-    
+
     // Set up the alarm interface
     alarmSerialPort = alarmSetup(&Serial);
     //Put the serial pins on D7 = Rx and D8 = Tx.

@@ -7,15 +7,14 @@
 
 #include "wifi.h"
 
+#include "utils.h"
 #include "debug.h"
-#include "credentials.h"
+#include "nvm_cfg.h"
 #include "messages_tx.h"
 
-// WiFi settings
-// WiFi login and password now through WiFiManager module
-//const char* ssid = STASSID;
-//const char* password = STAPSK;
-const char* apPassword = WIFI_AP_PASSWORD;
+
+// Use this to force a wifi settings rest and enter config mode
+//#define WIFI_RESET_TEST
 
 // Size of a MAC address char buffer
 #define WIFI_BUFFER_SIZE_MAC    (12)
@@ -53,6 +52,47 @@ const char* apPassword = WIFI_AP_PASSWORD;
 // Name for the rssi
 #define WIFI_NAME_RSSI          ("rssi")
 
+// HTTP definitions for the configuration portal
+#define HTTP_PARAM_HEADING_START   "<br /><br /><br /> <b>"
+#define HTTP_PARAM_HEADING_END     "</b>"
+#define HTTP_PARAM_TEXT_1_START    "<br /> <small>"
+#define HTTP_PARAM_TEXT_N_START    "<br />" HTTP_PARAM_TEXT_1_START
+#define HTTP_PARAM_TEXT_END        "</small>"
+
+#define HTTP_TEXT_NVM_ERROR_CNT    "NVM Error Counter"
+
+#define HTTP_TEXT_NETWORK_OTA_PWD  "OTA Password"
+#define HTTP_TEXT_NETWORK_AP_PWD   "WiFi AP Password"
+
+#define HTTP_TEXT_MQTT_SERVER      "MQTT Server"
+#define HTTP_TEXT_MQTT_USER        "MQTT User"
+#define HTTP_TEXT_MQTT_PWD         "MQTT Password"
+#define HTTP_TEXT_MQTT_TOPIC       "MQTT Root Topic"
+
+#define HTTP_TEXT_IO_DIMMING       "LED Dimming Level"
+
+#define HTTP_TEXT_ALARM_ADDRESS    "Home Address"
+
+// HTTP constant strings for the configuration portal
+const char* httpTextHeadingNvm      = HTTP_PARAM_HEADING_START "NVM Settings"             HTTP_PARAM_HEADING_END;
+const char* httpTextNvmErrorCnt     = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_NVM_ERROR_CNT    HTTP_PARAM_TEXT_END;
+
+const char* httpTextHeadingNetwork  = HTTP_PARAM_HEADING_START "Network Settings"         HTTP_PARAM_HEADING_END;
+const char* httpTextOtaPassword     = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_NETWORK_OTA_PWD  HTTP_PARAM_TEXT_END;
+const char* httpTextWifiApPassword  = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_NETWORK_AP_PWD   HTTP_PARAM_TEXT_END;
+
+const char* httpTextHeadingMqtt     = HTTP_PARAM_HEADING_START "MQTT Settings"            HTTP_PARAM_HEADING_END;
+const char* httpTextMqttServer      = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_MQTT_SERVER      HTTP_PARAM_TEXT_END;
+const char* httpTextMqttUser        = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_MQTT_USER        HTTP_PARAM_TEXT_END;
+const char* httpTextMqttPassword    = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_MQTT_PWD         HTTP_PARAM_TEXT_END;
+const char* httpTextMqttTopicRoot   = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_MQTT_TOPIC       HTTP_PARAM_TEXT_END;
+
+const char* httpTextHeadingIO       = HTTP_PARAM_HEADING_START "IO Settings"              HTTP_PARAM_HEADING_END;
+const char* httpTextLedDimmingLevel = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_IO_DIMMING       HTTP_PARAM_TEXT_END;
+
+const char* httpTextHeadingAlarm    = HTTP_PARAM_HEADING_START "Alarm Settings"           HTTP_PARAM_HEADING_END;
+const char* httpTextHomeAddress     = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_ALARM_ADDRESS    HTTP_PARAM_TEXT_END;
+
 // SSID connected
 static char ssidString[WIFI_BUFFER_SIZE_SSID];
 
@@ -71,7 +111,6 @@ static char macString[WIFI_MAC_BUFFER_SIZE];
 // RSSI
 static long rssi;
 
-
 // Wifi data for this software
 static wifiData wifiDataSoftware = {WIFI_NAME_SSID,         ssidString,
                                     WIFI_NAME_IP,           ipString,
@@ -80,8 +119,6 @@ static wifiData wifiDataSoftware = {WIFI_NAME_SSID,         ssidString,
                                     WIFI_NAME_MAC,          macString,
                                     WIFI_NAME_RSSI,         &rssi
 };
-
-
 
 // Structure for all publisher modules
 // The last element is always the default 
@@ -93,6 +130,9 @@ static wifiModuleDetail publisherModules[] = {{"483FDA482A64", "pub-alarm-482a64
 
 // Pointer to the active module in the publisher module structure
 static unsigned int activeModule;
+
+// Configuration save
+static bool configSave = false;
 
 // Decives WiFi full media access control (MAC) address
 static char deviceMac[WIFI_BUFFER_SIZE_MAC + 1];
@@ -150,9 +190,9 @@ static void findCurrentModule(void) {
 }
 
 /**
-    Callback when WiFi fails to connectg
+    Callback when WiFi fails to connect.
 */
-static void callbackFailedWifiConnect (WiFiManager *myWiFiManager) {
+static void callbackFailedWifiConnect(WiFiManager *myWiFiManager) {
     String debugMessage;
 
     debugMessage = (String() + "Entering WiFi configuration mode.");
@@ -160,6 +200,13 @@ static void callbackFailedWifiConnect (WiFiManager *myWiFiManager) {
 
     debugMessage = (String() + "SSID: " + myWiFiManager->getConfigPortalSSID() + ", IP: " + WiFi.softAPIP().toString());
     debugLog(&debugMessage, warning);
+}
+
+/**
+    Callback when configuraiton needs to be saved.
+*/
+static void callbackConfigUpdated(void) {
+    configSave = true;
 }
 
 /**
@@ -196,7 +243,24 @@ static const char* wifiStatusToString(wl_status_t status) {
 void setupWifi() {
     String debugMessage;
     WiFiManager wifiManager;    
-         
+
+    // Pointer to the RAM mirror
+    nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRW(&ramMirrorPtr);
+
+    // String storage for errorCounter integer (text entry field)
+    char nvmErrorCounterString[STRNLEN_INT(NVM_ERROR_MAX) + 1];
+
+    // String storage for ledDimmingLevel integer (text entry field)
+    char ledDimmingLevelString[STRNLEN_INT(PWMRANGE) + 1];
+
+    #ifdef WIFI_RESET_TEST
+        // Reset wifi early during initialisation
+        resetWifi();
+    #endif
+    
     bufferMacString();
     findCurrentModule();
 
@@ -204,22 +268,124 @@ void setupWifi() {
     WiFi.mode(WIFI_STA);
     WiFi.hostname(publisherModules[activeModule].moduleHostName);
 
+    // Setup debug output and call backs for the wifiManager
     wifiManager.setDebugOutput(false);
     wifiManager.setAPCallback(callbackFailedWifiConnect);
+    wifiManager.setSaveConfigCallback(callbackConfigUpdated);
 
-    //wifiManager.setConfigPortalTimeout(180);
+    // Setup the config portal timeout (standard is 180s but have chosen 60s)
     wifiManager.setConfigPortalTimeout(60);
 
-    //WiFiManagerParameter custom_text("<p>MQTT stuff</p>");
-    //wifiManager.addParameter(&custom_text);
-    
-    //WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "192.168.1.4", 40);
-    //wifiManager.addParameter(&custom_mqtt_server);
+    // Save parameters even if connection is unsuccessful
+    wifiManager.setBreakAfterConfig(true);
 
+
+    // Nvm configs
+    WiFiManagerParameter textHeadingNvm(httpTextHeadingNvm);
+    WiFiManagerParameter textNvmErrorCnt(httpTextNvmErrorCnt);
+    sprintf(nvmErrorCounterString, "%d", ramMirrorPtr->nvm.errorCounter);
+    WiFiManagerParameter fieldNvmErrorCnt("errorCounter", HTTP_TEXT_NVM_ERROR_CNT, nvmErrorCounterString, STRNLEN_INT(NVM_ERROR_MAX));
+
+    wifiManager.addParameter(&textHeadingNvm);
+    wifiManager.addParameter(&textNvmErrorCnt);
+    wifiManager.addParameter(&fieldNvmErrorCnt);
+
+    // Network configs
+    WiFiManagerParameter textHeadingNetwork(httpTextHeadingNetwork);
+    WiFiManagerParameter textOtaPassword(httpTextOtaPassword);
+    WiFiManagerParameter fieldOtaPassword("otaPassword", HTTP_TEXT_NETWORK_OTA_PWD, ramMirrorPtr->network.otaPassword, NVM_MAX_LENGTH_PASSWORD);
+    WiFiManagerParameter textWifiApPassword(httpTextWifiApPassword);
+    WiFiManagerParameter fieldWifiApPassword("wifiAPPassword", HTTP_TEXT_NETWORK_AP_PWD, ramMirrorPtr->network.wifiAPPassword, NVM_MAX_LENGTH_PASSWORD);
+    
+    wifiManager.addParameter(&textHeadingNetwork);
+    wifiManager.addParameter(&textOtaPassword);
+    wifiManager.addParameter(&fieldOtaPassword);
+    wifiManager.addParameter(&textWifiApPassword);
+    wifiManager.addParameter(&fieldWifiApPassword);
+
+    // MQTT configs
+    WiFiManagerParameter textHeadingMqtt(httpTextHeadingMqtt);
+    WiFiManagerParameter textMqttServer(httpTextMqttServer);
+    WiFiManagerParameter fieldMqttServer("mqttServer", HTTP_TEXT_MQTT_SERVER, ramMirrorPtr->mqtt.mqttServer, NVM_MAX_LENGTH_URL);
+    WiFiManagerParameter textMqttUser(httpTextMqttUser);
+    WiFiManagerParameter fieldMqttUser("mqttUser", HTTP_TEXT_MQTT_USER, ramMirrorPtr->mqtt.mqttUser, NVM_MAX_LENGTH_USER);
+    WiFiManagerParameter textMqttPassword(httpTextMqttPassword);
+    WiFiManagerParameter fieldMqttPassword("mqttPassword", HTTP_TEXT_MQTT_PWD, ramMirrorPtr->mqtt.mqttPassword, NVM_MAX_LENGTH_PASSWORD);
+    WiFiManagerParameter textMqttTopicRoot(httpTextMqttTopicRoot);
+    WiFiManagerParameter fieldMqttTopicRoot("mqttTopicRoot", HTTP_TEXT_MQTT_TOPIC, ramMirrorPtr->mqtt.mqttTopicRoot, NVM_MAX_LENGTH_TOPIC);
+
+    wifiManager.addParameter(&textHeadingMqtt);
+    wifiManager.addParameter(&textMqttServer);
+    wifiManager.addParameter(&fieldMqttServer);
+    wifiManager.addParameter(&textMqttUser);
+    wifiManager.addParameter(&fieldMqttUser);
+    wifiManager.addParameter(&textMqttPassword);
+    wifiManager.addParameter(&fieldMqttPassword);
+    wifiManager.addParameter(&textMqttTopicRoot);
+    wifiManager.addParameter(&fieldMqttTopicRoot);
+
+    // IO configs
+    WiFiManagerParameter textHeadingIO(httpTextHeadingIO);
+    WiFiManagerParameter textLedDimmingLevel(httpTextLedDimmingLevel);
+    sprintf(ledDimmingLevelString, "%d", ramMirrorPtr->io.ledDimmingLevel);
+    WiFiManagerParameter fieldLedDimmingLevel("ledDimmingLevel", HTTP_TEXT_IO_DIMMING, ledDimmingLevelString, STRNLEN_INT(PWMRANGE));
+
+    wifiManager.addParameter(&textHeadingIO);
+    wifiManager.addParameter(&textLedDimmingLevel);
+    wifiManager.addParameter(&fieldLedDimmingLevel);
+
+    // Alarm configs
+    WiFiManagerParameter textHeadingAlarm(httpTextHeadingAlarm);
+    WiFiManagerParameter textHomeAddress(httpTextHomeAddress);
+    WiFiManagerParameter fieldHomeAddress("homeAddress", HTTP_TEXT_IO_DIMMING, ramMirrorPtr->alarm.homeAddress, NVM_MAX_LENGTH_ADDRESS);
+
+    wifiManager.addParameter(&textHeadingAlarm);
+    wifiManager.addParameter(&textHomeAddress);
+    wifiManager.addParameter(&fieldHomeAddress);
+    
+    // Debug message
     debugMessage = (String() + "Connecting to WiFi network...");
     debugLog(&debugMessage, info);
 
-    if(false == wifiManager.autoConnect(publisherModules[activeModule].moduleHostName, apPassword)) {
+    // Try auto connect
+    bool connectionStatus = wifiManager.autoConnect(publisherModules[activeModule].moduleHostName, ramMirrorPtr->network.wifiAPPassword);
+
+    // If there is data to update
+    if(configSave == true) {
+
+        // NVM configs
+        ramMirrorPtr->nvm.errorCounter = (uint32_t) atoi(fieldNvmErrorCnt.getValue());
+        nvmUpdateRamMirrorCrcByName(nvmNvmStruc);
+
+        // Network configs
+        strcpy(ramMirrorPtr->network.otaPassword, fieldOtaPassword.getValue());
+        strcpy(ramMirrorPtr->network.wifiAPPassword, fieldWifiApPassword.getValue());
+        nvmUpdateRamMirrorCrcByName(nvmNetworkStruc);
+
+        // MQTT configs
+        strcpy(ramMirrorPtr->mqtt.mqttServer, fieldMqttServer.getValue());
+        strcpy(ramMirrorPtr->mqtt.mqttUser, fieldMqttUser.getValue());
+        strcpy(ramMirrorPtr->mqtt.mqttPassword, fieldMqttPassword.getValue());
+        strcpy(ramMirrorPtr->mqtt.mqttTopicRoot, fieldMqttTopicRoot.getValue());
+        nvmUpdateRamMirrorCrcByName(nvmMqttStruc);
+
+        // IO configs
+        ramMirrorPtr->io.ledDimmingLevel = (unsigned int) atoi(fieldLedDimmingLevel.getValue());
+        nvmUpdateRamMirrorCrcByName(nvmIOStruc);
+
+        // Alarm configs
+        strcpy(ramMirrorPtr->alarm.homeAddress, fieldHomeAddress.getValue());
+        nvmUpdateRamMirrorCrcByName(nvmAlarmStruc);
+        
+        nvmComittRamMirror();
+        
+        // Debug message
+        debugMessage = (String() + "Configuraiton data saved.");
+        debugLog(&debugMessage, info);
+    }
+
+    // If the auto connect failed, reset
+    if(connectionStatus == false) {
         debugMessage = (String() + "WiFi connection set-up failed! Rebooting in 5s...");
         debugLog(&debugMessage, error);
 
@@ -265,7 +431,6 @@ void resetWifi() {
     delay(5000);
     ESP.restart();
 }
-
 
 /**
     Transmit a wifi message.

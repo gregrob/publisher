@@ -4,7 +4,8 @@
 #include <ArduinoJson.h>
 
 #include "debug.h"
-#include "credentials.h"
+#include "nvm_cfg.h"
+
 #include "wifi.h"
 #include "mqtt.h"
 #include "alarm.h"
@@ -20,12 +21,9 @@
 static void mqttMessageCallback(char* topic, byte* payload, unsigned int length);
 static void mqttReconnect(void);
 static void mqttMessageSubscribe(const char * const shortTopic);
+static void mqttMessageFullTopic(const char * const shortTopic, String * const longTopicPtr);
 
 // MQTT settings
-const char* mqtt_server = "swarm.max.lan";
-const char* mqtt_user = MQTT_USER;
-const char* mqtt_password = MQTT_PASSWORD;
-const char* mqtt_prefix = "publisher";
 const char* mqtt_alarm_command = "alarm command";
 const char* mqtt_module_command = "module command";
 
@@ -42,9 +40,16 @@ PubSubClient client(espClient);
     @param[in]     length message length.
 */
 static void mqttMessageCallback(char* topic, byte* payload, unsigned int length) {
+
+    // Message topic base
+    String mqttMessageTopicBase;
+
     StaticJsonDocument<JSON_DOC_SIZE> doc;
     char payloadBuffer[MQTT_MAX_PACKET_SIZE];
     String debugMessage;
+
+    // Construct the message topic base
+    mqttMessageFullTopic("", &mqttMessageTopicBase);
 
     // Make sure that message is smaller than the buffer
     if((length + 1) <= MQTT_MAX_PACKET_SIZE) {
@@ -65,7 +70,7 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
         else {
 
             // Module command message (+1 because of /) 
-            if (strcmp(topic + strlen(mqtt_prefix) + 1 + strlen(getWiFiModuleDetails()->moduleHostName) + 1, mqtt_module_command) == 0) {
+            if (strcmp(topic + mqttMessageTopicBase.length(), mqtt_module_command) == 0) {
                 // Check if the json contains a valid text value
                 if (doc.containsKey(JSON_DOC_VAR_RESET)) {               
                     String rxText = doc[JSON_DOC_VAR_RESET];
@@ -86,7 +91,7 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
             }
 
             // Alarm command message (+1 because of /)
-            else if (strcmp(topic + strlen(mqtt_prefix) + 1 + strlen(getWiFiModuleDetails()->moduleHostName) + 1, mqtt_alarm_command) == 0) {
+            else if (strcmp(topic + mqttMessageTopicBase.length(), mqtt_alarm_command) == 0) {
 
                 // Check if the json contains a valid text value
                 if (doc.containsKey(JSON_DOC_VAR_ARMDISARM)) {               
@@ -96,10 +101,7 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
                     debugMessage = (String() + "MQTT found JSON key: " + JSON_DOC_VAR_ARMDISARM);
                     debugLog(&debugMessage, info);
                 }
-            }            
-
-            // Valid json so publish a status message
-            //mqttMessageSendModuleStatus();
+            }
         }
     }
 
@@ -109,30 +111,37 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
     }    
 }
 
+
 /**
     Handle MQTT connection and subscription.
 */
 static void mqttReconnect(void) {   
+    
+    // Debug message
     String debugMessage;
 
-    // Topic prefix and host
-    String topicPrefixHost = String() + mqtt_prefix + '/' + getWiFiModuleDetails()->moduleHostName + '/';
+    // Pointer to the RAM mirror
+    const nvmCompleteStructure * ramMirrorPtr;
 
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+    
     // Create a client ID based on the mac address
     String clientId = (String() + getWiFiModuleDetails()->moduleHostName);
 
     // Attempt to connect
-    debugMessage = (String() + "MQTT attempting connection from " + clientId.c_str() + " to " + mqtt_server  + ":" + MQTT_PORT);
+    debugMessage = (String() + "MQTT attempting connection from " + clientId.c_str() + " to " + ramMirrorPtr->mqtt.mqttServer  + ":" + MQTT_PORT);
     debugLog(&debugMessage, info);
-    if (client.connect(clientId.c_str(), mqtt_user, mqtt_password)) {
-        debugMessage = (String() + "MQTT connected to " + mqtt_server + ":" + MQTT_PORT);
+
+    if (client.connect(clientId.c_str(), ramMirrorPtr->mqtt.mqttUser, ramMirrorPtr->mqtt.mqttPassword)) {
+        debugMessage = (String() + "MQTT connected to " + ramMirrorPtr->mqtt.mqttServer + ":" + MQTT_PORT);
         debugLog(&debugMessage, info);
         
         mqttMessageSubscribe(mqtt_module_command);
         mqttMessageSubscribe(mqtt_alarm_command);     
     } 
     else {
-        debugMessage = (String() + "MQTT connection to " + mqtt_server + ":" + MQTT_PORT + " failed (rc=" + client.state() + "), will retry later");
+        debugMessage = (String() + "MQTT connection to " + ramMirrorPtr->mqtt.mqttServer + ":" + MQTT_PORT + " failed (rc=" + client.state() + "), will retry later");
         debugLog(&debugMessage, error);
     }
 }
@@ -142,11 +151,18 @@ static void mqttReconnect(void) {
     MQTT setup.
 */
 void mqttSetup(void) {
-  client.setServer(mqtt_server, MQTT_PORT);
-  client.setCallback(mqttMessageCallback);
+    
+    // Pointer to the RAM mirror
+    const nvmCompleteStructure * ramMirrorPtr;
 
-  // Connect
-  mqttReconnect();  
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+  
+    client.setServer(ramMirrorPtr->mqtt.mqttServer, MQTT_PORT);
+    client.setCallback(mqttMessageCallback);
+
+    // Connect
+    mqttReconnect();  
 }
 
 
@@ -172,6 +188,29 @@ void mqttMessageLoop(void) {
 
 
 /**
+    Generate a MQTT topic. 
+    This function will construct the full topic [mqtt_prefix]/[hostname]/[shortTopic]. 
+
+    @param[in]     shortTopic pointer to the topic (short form without prefix and hostname)
+    @param[in]     longTopicPtr pointer to the final location for the full topic
+*/
+static void mqttMessageFullTopic(const char * const shortTopic, String * const longTopicPtr) {
+    
+    // Full topic string
+    String fullTopic;
+    
+    // Pointer to the RAM mirror
+    const nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+
+    // Create the full message topic with prefix and hostname
+    *longTopicPtr = String() + ramMirrorPtr->mqtt.mqttTopicRoot + '/' + getWiFiModuleDetails()->moduleHostName + '/' + shortTopic;
+}
+
+
+/**
     Subscribe to MQTT message. 
     This function will construct the topic [mqtt_prefix]/[hostname]/[shortTopic]. 
 
@@ -179,9 +218,13 @@ void mqttMessageLoop(void) {
     @param[in]     message pointer to the message
 */
 static void mqttMessageSubscribe(const char * const shortTopic) {
+    
+    // Full topic string
+    String fullTopic;
+    
     // Create the full message topic with prefix and hostname
-    String fullTopic = String() + mqtt_prefix + '/' + getWiFiModuleDetails()->moduleHostName + '/' + shortTopic;
-   
+    mqttMessageFullTopic(shortTopic, &fullTopic);
+
     // Debug message
     String debugMessage;
 
@@ -201,9 +244,13 @@ static void mqttMessageSubscribe(const char * const shortTopic) {
     @param[in]     message pointer to the message
 */
 void mqttMessageSendRaw(const char * const shortTopic, const char * const  message) {
+
+    // Full topic string
+    String fullTopic;
+
     // Create the full message topic with prefix and hostname
-    String fullTopic = String() + mqtt_prefix + '/' + getWiFiModuleDetails()->moduleHostName + '/' + shortTopic;
-   
+    mqttMessageFullTopic(shortTopic, &fullTopic);
+    
     // Debug message
     String debugMessage;
 
