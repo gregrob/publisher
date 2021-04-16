@@ -113,7 +113,15 @@ static void nvmCheckIntegrity(void) {
 
     // If there was an NVM update, make sure it is comitted
     if (nvmUpdate == true) {
-       nvmComittRamMirror();
+               
+        // Increment error counter
+        if(ramMirrorPtr->nvm.errorCounter < NVM_ERROR_MAX) {
+            ramMirrorPtr->nvm.errorCounter++;
+        }
+       
+        // Recaclulate CRC and comitt the NVM
+        nvmUpdateRamMirrorCrcByName(nvmNvmStruc);
+        nvmComittRamMirror();
     }
 }
 

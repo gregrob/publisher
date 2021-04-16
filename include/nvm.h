@@ -13,6 +13,9 @@
 // Default buffer value for use in ROM defaults
 #define NVM_BUFFER_DEFAULT          (uint32_t(0xDEADBEEF))
 
+// Maximum error number (do not use brackets on this number)
+#define NVM_ERROR_MAX               9999
+
 // NVM base address
 #define NVM_BASE_ADDRESS            (0)
 

@@ -6,6 +6,9 @@
 // NVM ROM default for the CRC footer in every NVM structure
 static const nvmFooterCrc nvmFooterCrcDefault = {NVM_BUFFER_DEFAULT, NVM_CRC_DEFAULT};
 
+// NVM ROM defaults for nvmSubConfigNvm
+static const nvmSubConfigNvm nvmSubConfigNvmDefault = {0, nvmFooterCrcDefault};
+
 // NVM ROM defaults for nvmSubConfigNetwork
 static const nvmSubConfigNetwork nvmSubConfigNetworkDefault = {"password", "password", nvmFooterCrcDefault};
 
@@ -28,7 +31,14 @@ static nvmCompleteStructure nvmRamMirror;
 static const uint32_t nvmRamMirrorSizeBytes = (sizeof(nvmRamMirror) / sizeof(uint8_t));
 
 // NVM configuration
-static const nvmStructureConfig nvmConfig[] = { // Memory configuration for nvmSubConfigNetwork
+static const nvmStructureConfig nvmConfig[] = { // Memory configuration for nvmSubConfigNvm
+                                                {(uint8_t * const) & nvmRamMirror.nvm, 
+                                                (const uint8_t * const) & nvmSubConfigNvmDefault,
+                                                (uint8_t * const) & nvmRamMirror.nvm.footer.crc,
+                                                ((sizeof(nvmRamMirror.nvm) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
+                                                true},
+        
+                                                // Memory configuration for nvmSubConfigNetwork
                                                 {(uint8_t * const) & nvmRamMirror.network, 
                                                 (const uint8_t * const) & nvmSubConfigNetworkDefault,
                                                 (uint8_t * const) & nvmRamMirror.network.footer.crc,

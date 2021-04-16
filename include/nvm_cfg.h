@@ -21,14 +21,22 @@
 
 // NVM subconfiguration index
 typedef enum {
-    nvmNetworkStruc  = 0,
-    nvmMqttStruc     = 1,
-    nvmIOStruc       = 2,
-    nvmAlarmStruc    = 3,
-    nvmExt1Struc     = 4, 
+    nvmNvmStruc      = 0,
+    nvmNetworkStruc  = 1,
+    nvmMqttStruc     = 2,
+    nvmIOStruc       = 3,
+    nvmAlarmStruc    = 4,
+    nvmExt1Struc     = 5, 
 
     nvmNumberOfTypes
 } nvmSubConfigIndex;
+
+// NVM NVM structure
+typedef struct __attribute__ ((packed)) {    
+     uint32_t                errorCounter;                              // Number of recovered NVM errors
+     
+     nvmFooterCrc            footer;
+} nvmSubConfigNvm;
 
 // Network NVM structure
 typedef struct __attribute__ ((packed)) {    
@@ -58,7 +66,7 @@ typedef struct __attribute__ ((packed)) {
 // Alarm NVM structure
 typedef struct __attribute__ ((packed)) {
      char                    homeAddress[NVM_MAX_LENGTH_ADDRESS];       // Home address for the alarm
-    
+         
      nvmFooterCrc            footer;
 } nvmSubConfigAlarm;
 
@@ -72,6 +80,7 @@ typedef struct __attribute__ ((packed)) {
 
 // Complete NVM structure
 typedef struct __attribute__ ((packed)) {
+    nvmSubConfigNvm         nvm;                 // NVM settings
     nvmSubConfigNetwork     network;             // Network settings
     nvmSubConfigMqtt        mqtt;                // MQTT settings
     nvmSubConfigIO          io;                  // IO settings
