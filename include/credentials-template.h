@@ -1,18 +1,9 @@
 #ifndef CREDENTIALS_H
 #define CREDENTIALS_H
 
-// Credentials for wifi
-// WiFi login and password now through WiFiManager module
-//#define STASSID             "SSID"
-//#define STAPSK              "PASSWORD"
-#define WIFI_AP_PASSWORD    "PASSWORD"
-
-// Credentials for oth
+// Credentials for ota
+// Dont comment this one out as the script needs this for building
 #define OTA_PASSWORD        "PASSWORD"
-
-// Credentials for mqtt
-#define MQTT_USER           "USER"
-#define MQTT_PASSWORD       "PASSWORD"
 
 // Credentials for alarm
 #define ALARM_HOME_ADDRESS  "HOME ADDRESS"

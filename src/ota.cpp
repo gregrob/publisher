@@ -5,8 +5,8 @@
 #include <ArduinoOTA.h>
 
 #include "debug.h"
+#include "nvm_cfg.h"
 #include "wifi.h"
-#include "credentials.h"
 
 // Two step process as defined in - https://arduino-esp8266.readthedocs.io/en/latest/ota_updates/readme.html
 // Stops bricking upon crash / power outage during update
@@ -16,6 +16,12 @@
     ota setup.
 */
 void otaSetup(void) {
+    // Pointer to the RAM mirror
+    const nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+
     // Port defaults to 8266
     // ArduinoOTA.setPort(8266);
 
@@ -24,8 +30,8 @@ void otaSetup(void) {
     ArduinoOTA.setHostname(getWiFiModuleDetails()->moduleHostName);
 
     // Authentication.
-    ArduinoOTA.setPassword(OTA_PASSWORD);
-
+    ArduinoOTA.setPassword(ramMirrorPtr->network.otaPassword);
+    
     // Password can be set with it's md5 value as well
     // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
     // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
