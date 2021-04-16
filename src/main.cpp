@@ -126,6 +126,7 @@ void periodicMessageTx(void) {
     versionTransmitVersionMessage();
     runtimeTransmitRuntimeMessage();
     wifiTransmitWifiMessage();
+    nvmTransmitStatusMessage();
     
     // Only handle alarm messages if this is an alarm unit
     if (getWiFiModuleDetails()->moduleHostType == alarmModule) {

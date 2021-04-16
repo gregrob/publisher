@@ -23,6 +23,9 @@ static char messageToSend[MESSAGES_TX_MESSAGE_BUFFER_SIZE];
 // MQTT topic for module software
 static const char* messageMqttTopicModuleSoftware = MESSAGES_TX_MQTT_TOPIC_MODULE_SOFTWARE;
 
+// MQTT topic for module NVM
+static const char* messageMqttTopicModuleNvm = MESSAGES_TX_MQTT_TOPIC_MODULE_NVM;
+
 // MQTT topic for module runtime
 static const char* messageMqttTopicModuleRuntime = MESSAGES_TX_MQTT_TOPIC_MODULE_RUNTIME;
 
@@ -155,4 +158,26 @@ void messsagesTxAlarmTriggersMessage(const alarmZoneInput * const alarmTriggersD
     
     // Transmit the message
     mqttMessageSendRaw(messageMqttTopicAlarmTriggers, messageToSend);
+}
+
+
+/**
+    Transmit a NVM status message.
+    Convert the message structure into JSON format here.
+
+    @param[in]     errorCounter number of NVM errors
+*/
+void messsagesTxNvmStatusMessage(const uint32_t errorCounter) {
+    
+    // Clear the JSON object
+    doc.clear();
+   
+    // Populate the date (manually because of mixed types)
+    doc["errorCounter"] = errorCounter;
+
+    // Searilise the JSON string
+    serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
+    
+    // Transmit the message
+    mqttMessageSendRaw(messageMqttTopicModuleNvm, messageToSend);   
 }

@@ -62,5 +62,10 @@ void nvmComittRamMirror(void);
 */
 void nvmInit(void);
 
+/**
+    Transmit a NVM status message.
+    No processing of the message here.
+*/
+void nvmTransmitStatusMessage(void);
 
 #endif

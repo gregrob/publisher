@@ -49,4 +49,12 @@ void messsagesTxAlarmStatusMessage(const alarmStatusData * const alarmStatusData
 */
 void messsagesTxAlarmTriggersMessage(const alarmZoneInput * const alarmTriggersDataStructurePtr, const unsigned int * const alarmTriggersStructureSize);
 
+/**
+    Transmit a NVM status message.
+    Convert the message structure into JSON format here.
+
+    @param[in]     errorCounter number of NVM errors
+*/
+void messsagesTxNvmStatusMessage(const uint32_t errorCounter);
+
 #endif

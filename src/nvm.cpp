@@ -6,6 +6,7 @@
 #include "nvm_cfg.h"
 
 #include "debug.h"
+#include "messages_tx.h"
 
 // Use this to force a corruption of the NVM
 //#define NVM_CORRUPT_TEST
@@ -208,3 +209,18 @@ void nvmInit(void) {
         nvmCheckIntegrity();
     #endif
 }    
+
+
+/**
+    Transmit a NVM status message.
+    No processing of the message here.
+*/
+void nvmTransmitStatusMessage(void) {   
+    // Pointer to the RAM mirror
+    const nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+
+    messsagesTxNvmStatusMessage(ramMirrorPtr->nvm.errorCounter);
+}
