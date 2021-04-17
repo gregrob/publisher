@@ -59,7 +59,7 @@ static void nvmCheckIntegrity(void) {
     const nvmStructureConfig * nvmConfigPtr;
 
     // Set-up pointer to NVM configuration and get its size
-    const uint32_t nvmConfigSizePtr = nvmGetConfigPointerRO(&nvmConfigPtr);
+    const uint32_t nvmConfigSize = nvmGetConfigPointerRO(&nvmConfigPtr);
 
     // Expected CRC
     crc_t crcExpected = 0;
@@ -77,7 +77,7 @@ static void nvmCheckIntegrity(void) {
     bool nvmUpdate = false;
     
     // Check the CRC's of all the NVM structures
-    for (unsigned int i = 0; i < nvmConfigSizePtr; i++) {
+    for (unsigned int i = 0; i < nvmConfigSize; i++) {
 
         // Calculate the expected CRC
         crcExpected = CRC32::calculate(nvmConfigPtr[i].addressRamMirror, nvmConfigPtr[i].length);
@@ -144,13 +144,13 @@ void nvmUpdateRamMirrorCrcByIndex(uint32_t index) {
     const nvmStructureConfig * nvmConfigPtr;
 
     // Set-up pointer to NVM configuration and get its size
-    const uint32_t nvmConfigSizePtr = nvmGetConfigPointerRO(&nvmConfigPtr);
+    const uint32_t nvmConfigSize = nvmGetConfigPointerRO(&nvmConfigPtr);
 
     // Calculated CRC
     crc_t crcCalculated = 0;
 
     // Make sure the index is within range
-    if(index < nvmConfigSizePtr) {
+    if(index < nvmConfigSize) {
         
         // Calculate the CRC and copy it to the RAM mirror
         crcCalculated = CRC32::calculate(nvmConfigPtr[index].addressRamMirror, nvmConfigPtr[index].length);
@@ -192,14 +192,14 @@ void nvmInit(void) {
     nvmCompleteStructure * ramMirrorPtr;
 
     // Set-up pointer to RAM mirror and get its size
-    const uint32_t ramMirrorSizePtr = nvmGetRamMirrorPointerRW(&ramMirrorPtr);
+    const uint32_t ramMirrorSize = nvmGetRamMirrorPointerRW(&ramMirrorPtr);
 
     // Debug message
-    debugMessage = String() + "NVM Structure is " + ramMirrorSizePtr + " bytes.";
+    debugMessage = String() + "NVM Structure is " + ramMirrorSize + " bytes.";
     debugLog(&debugMessage, info);
 
     // Read the NVM structure to the RAM mirror
-    EEPROM.begin(ramMirrorSizePtr);
+    EEPROM.begin(ramMirrorSize);
     EEPROM.get(NVM_BASE_ADDRESS, *ramMirrorPtr);
 
     // Check integrity
