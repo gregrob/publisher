@@ -14,10 +14,19 @@
 #define NVM_BUFFER_DEFAULT          (uint32_t(0xDEADBEEF))
 
 // Maximum error number (do not use brackets on this number)
-#define NVM_ERROR_MAX               9999
+#define NVM_MAX_ERROR               9999
+
+// Maximum version number (do not use brackets on this number)
+#define NVM_MAX_VERSION             9999
 
 // NVM base address
 #define NVM_BASE_ADDRESS            (0)
+
+// Default for NVM version
+#define NVM_DATA_VERSION_DEFAULT    (1)
+
+// Default for NVM errors
+#define NVM_DATA_ERRORS_DEFAULT     (0)
 
 
 // CRC datatype (32bit)
@@ -29,6 +38,12 @@ typedef struct {
      crc_t                  crc;                 // CRC
 } nvmFooterCrc;
 
+// NVM structure core data
+typedef struct {
+     uint16_t                errorCounter;       // Number of recovered NVM errors
+     uint16_t                version;            // Version of NVM data
+} nvmCoreData;
+
 // NVM structure configuration
 typedef struct {
     uint8_t * const         addressRamMirror;    // Pointer to base address of the RAM mirror (pointer RO, data RW)
@@ -39,6 +54,14 @@ typedef struct {
 
     const bool              rewriteWhenCorrupt;  // Allow defaults to be restored when NVM structure is corrupt
 } nvmStructureConfig;
+
+// NVM data message
+typedef struct {
+    nvmCoreData             core;
+
+    uint32_t                bytesConsumed;
+    uint32_t                structures;
+} nvmData;
 
 
 /**

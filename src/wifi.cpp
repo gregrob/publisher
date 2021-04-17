@@ -59,6 +59,7 @@
 #define HTTP_PARAM_TEXT_N_START    "<br />" HTTP_PARAM_TEXT_1_START
 #define HTTP_PARAM_TEXT_END        "</small>"
 
+#define HTTP_TEXT_NVM_VERSION      "NVM Data Version"
 #define HTTP_TEXT_NVM_ERROR_CNT    "NVM Error Counter"
 
 #define HTTP_TEXT_NETWORK_OTA_PWD  "OTA Password"
@@ -75,7 +76,8 @@
 
 // HTTP constant strings for the configuration portal
 const char* httpTextHeadingNvm      = HTTP_PARAM_HEADING_START "NVM Settings"             HTTP_PARAM_HEADING_END;
-const char* httpTextNvmErrorCnt     = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_NVM_ERROR_CNT    HTTP_PARAM_TEXT_END;
+const char* httpTextNvmVersion      = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_NVM_VERSION      HTTP_PARAM_TEXT_END;
+const char* httpTextNvmErrorCnt     = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_NVM_ERROR_CNT    HTTP_PARAM_TEXT_END;
 
 const char* httpTextHeadingNetwork  = HTTP_PARAM_HEADING_START "Network Settings"         HTTP_PARAM_HEADING_END;
 const char* httpTextOtaPassword     = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_NETWORK_OTA_PWD  HTTP_PARAM_TEXT_END;
@@ -250,8 +252,11 @@ void setupWifi() {
     // Set-up pointer to RAM mirror
     (void) nvmGetRamMirrorPointerRW(&ramMirrorPtr);
 
+    // String storage for NVM version integer (text entry field)
+    char nvmVersionString[STRNLEN_INT(NVM_MAX_VERSION) + 1];
+
     // String storage for errorCounter integer (text entry field)
-    char nvmErrorCounterString[STRNLEN_INT(NVM_ERROR_MAX) + 1];
+    char nvmErrorCounterString[STRNLEN_INT(NVM_MAX_ERROR) + 1];
 
     // String storage for ledDimmingLevel integer (text entry field)
     char ledDimmingLevelString[STRNLEN_INT(PWMRANGE) + 1];
@@ -282,11 +287,16 @@ void setupWifi() {
 
     // Nvm configs
     WiFiManagerParameter textHeadingNvm(httpTextHeadingNvm);
+    WiFiManagerParameter textNvmVersion(httpTextNvmVersion);
+    sprintf(nvmVersionString, "%d", ramMirrorPtr->nvm.core.version);
+    WiFiManagerParameter fieldNvmVersion("nvmVersion", HTTP_TEXT_NVM_ERROR_CNT, nvmVersionString, STRNLEN_INT(NVM_MAX_VERSION));
     WiFiManagerParameter textNvmErrorCnt(httpTextNvmErrorCnt);
-    sprintf(nvmErrorCounterString, "%d", ramMirrorPtr->nvm.errorCounter);
-    WiFiManagerParameter fieldNvmErrorCnt("errorCounter", HTTP_TEXT_NVM_ERROR_CNT, nvmErrorCounterString, STRNLEN_INT(NVM_ERROR_MAX));
+    sprintf(nvmErrorCounterString, "%d", ramMirrorPtr->nvm.core.errorCounter);
+    WiFiManagerParameter fieldNvmErrorCnt("errorCounter", HTTP_TEXT_NVM_ERROR_CNT, nvmErrorCounterString, STRNLEN_INT(NVM_MAX_ERROR));
 
     wifiManager.addParameter(&textHeadingNvm);
+    wifiManager.addParameter(&textNvmVersion);
+    wifiManager.addParameter(&fieldNvmVersion);
     wifiManager.addParameter(&textNvmErrorCnt);
     wifiManager.addParameter(&fieldNvmErrorCnt);
 
@@ -354,7 +364,8 @@ void setupWifi() {
     if(configSave == true) {
 
         // NVM configs
-        ramMirrorPtr->nvm.errorCounter = (uint32_t) atoi(fieldNvmErrorCnt.getValue());
+        ramMirrorPtr->nvm.core.version = (uint16_t) atoi(fieldNvmVersion.getValue());
+        ramMirrorPtr->nvm.core.errorCounter = (uint16_t) atoi(fieldNvmErrorCnt.getValue());
         nvmUpdateRamMirrorCrcByName(nvmNvmStruc);
 
         // Network configs

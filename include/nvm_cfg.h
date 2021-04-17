@@ -33,8 +33,8 @@ typedef enum {
 
 // NVM NVM structure
 typedef struct __attribute__ ((packed)) {    
-     uint32_t                errorCounter;                              // Number of recovered NVM errors
-     
+     nvmCoreData             core;                                      // Core data
+
      nvmFooterCrc            footer;
 } nvmSubConfigNvm;
 

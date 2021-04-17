@@ -6,8 +6,8 @@
 // NVM ROM default for the CRC footer in every NVM structure
 static const nvmFooterCrc nvmFooterCrcDefault = {NVM_BUFFER_DEFAULT, NVM_CRC_DEFAULT};
 
-// NVM ROM defaults for nvmSubConfigNvm
-static const nvmSubConfigNvm nvmSubConfigNvmDefault = {0, nvmFooterCrcDefault};
+// NVM ROM defaults for nvmSubConfigNvm - DO NOT CHANGE THIS ONE
+static const nvmSubConfigNvm nvmSubConfigNvmDefault = {{NVM_DATA_ERRORS_DEFAULT, NVM_DATA_VERSION_DEFAULT}, nvmFooterCrcDefault};
 
 // NVM ROM defaults for nvmSubConfigNetwork
 static const nvmSubConfigNetwork nvmSubConfigNetworkDefault = {"password", "password", nvmFooterCrcDefault};

@@ -116,8 +116,8 @@ static void nvmCheckIntegrity(void) {
     if (nvmUpdate == true) {
                
         // Increment error counter
-        if(ramMirrorPtr->nvm.errorCounter < NVM_ERROR_MAX) {
-            ramMirrorPtr->nvm.errorCounter++;
+        if(ramMirrorPtr->nvm.core.errorCounter < NVM_MAX_ERROR) {
+            ramMirrorPtr->nvm.core.errorCounter++;
         }
        
         // Recaclulate CRC and comitt the NVM
@@ -216,11 +216,21 @@ void nvmInit(void) {
     No processing of the message here.
 */
 void nvmTransmitStatusMessage(void) {   
+    
+    // Structure to store the NVM data to report
+    nvmData nvmDataCurrent;
+
     // Pointer to the RAM mirror
     const nvmCompleteStructure * ramMirrorPtr;
 
-    // Set-up pointer to RAM mirror
-    (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+    // Pointer to the NVM configuration
+    const nvmStructureConfig * nvmConfigPtr;
 
-    messsagesTxNvmStatusMessage(ramMirrorPtr->nvm.errorCounter);
+    // Set-up pointers and populate data structure
+    nvmDataCurrent.bytesConsumed = nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+    nvmDataCurrent.structures = nvmGetConfigPointerRO(&nvmConfigPtr);
+    nvmDataCurrent.core.errorCounter = ramMirrorPtr->nvm.core.errorCounter;
+    nvmDataCurrent.core.version = ramMirrorPtr->nvm.core.version;
+    
+    messsagesTxNvmStatusMessage(&nvmDataCurrent);
 }

@@ -165,16 +165,19 @@ void messsagesTxAlarmTriggersMessage(const alarmZoneInput * const alarmTriggersD
     Transmit a NVM status message.
     Convert the message structure into JSON format here.
 
-    @param[in]     errorCounter number of NVM errors
+    @param[in]     nvmDataStructurePtr pointer to the NVM data structure
 */
-void messsagesTxNvmStatusMessage(const uint32_t errorCounter) {
+void messsagesTxNvmStatusMessage(const nvmData * const nvmDataStructurePtr) {
     
     // Clear the JSON object
     doc.clear();
    
     // Populate the date (manually because of mixed types)
-    doc["errorCounter"] = errorCounter;
-
+    doc["version"] = nvmDataStructurePtr->core.version;
+    doc["bytesConsumed"] = nvmDataStructurePtr->bytesConsumed;
+    doc["structures"] = nvmDataStructurePtr->structures;
+    doc["errorCounter"] = nvmDataStructurePtr->core.errorCounter;
+    
     // Searilise the JSON string
     serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
     
