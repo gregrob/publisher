@@ -5,14 +5,14 @@
 #include "outputs.h"
 
 
-// Output pin for configuration mode LED
-#define OUTPUTS_PIN_MAP_CFG_MODE    (D0)
+// Output pin for configuration mode LED (no high transition on this pin on boot)
+#define OUTPUTS_PIN_MAP_CFG_MODE    (D2)
 
-// Output pin for the run mode LED
+// Output pin for the run mode LED (there is a small 100ms HIGH pulse during boot)
 #define OUTPUTS_PIN_MAP_RUN_MODE    (D5)
 
-// Output pin for the alarm control
-#define OUTPUTS_PIN_MAP_ALARM_CTRL  (D6)
+// Output pin for the alarm control (no high transition on this pin on boot)
+#define OUTPUTS_PIN_MAP_ALARM_CTRL  (D1)
 
 
 // Enumeration for outputs (index must align into configuration structure)
