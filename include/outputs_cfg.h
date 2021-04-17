@@ -1,9 +1,7 @@
 #ifndef OUTPUTS_CFG_H
 #define OUTPUTS_CFG_H
 
-
 #include "outputs.h"
-
 
 // Output pin for configuration mode LED (no high transition on this pin on boot)
 #define OUTPUTS_PIN_MAP_CFG_MODE    (D2)

@@ -1,7 +1,6 @@
 #ifndef OUTPUTS_H
 #define OUTPUTS_H
 
-
 // Call rate for the cyclic taks
 #define OUTPUTS_CYCLIC_RATE (100)
 
