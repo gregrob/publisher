@@ -9,7 +9,7 @@
 #include "wifi.h"
 #include "mqtt.h"
 #include "alarm.h"
-#include "outputs.h"
+#include "outputs_cfg.h"
 
 // Definitions
 #define MQTT_PORT               (1883)
@@ -80,13 +80,13 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
 
                     resetWifi();
                 }
-                //unsigned int a = doc["command"];
-                //unsigned int b = doc["hi"];
-                //unsigned int c = doc["hi-tim"];
-                //unsigned int d = doc["lo"];
-                //unsigned int e = doc["lo-tim"];
-                //outputsSetOutput(wifiRun, {(outputControlType)a, b, c, d, e});
-                //outputsSetOutput(wifiCfg, {(outputControlType)a, b, c, d, e});
+                //uint16_t a = doc["command"];
+                //uint16_t b = doc["hi"];
+                //uint16_t c = doc["hi-tim"];
+                //uint16_t d = doc["lo"];
+                //uint16_t e = doc["lo-tim"];
+               // outputsSetOutputByName(wifiRun, {(outputControlType)a, b, c, d, e});
+                //outputsSetOutputByName(configMode, {(outputControlType)a, b, c, d, e});
                 //Serial1.println(String() + a + " " + b + " " + c + " " + d + " " + e + " ");
             }
 

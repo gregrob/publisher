@@ -4,7 +4,7 @@
 #include "credentials.h"
 #include "debug.h"
 #include "messages_tx.h"
-#include "outputs.h"
+#include "outputs_cfg.h"
 
 // Alarm Panel Settings
 // 1. Area > Properties > Arm/Disarm Speaker Beeps Via RF Keyfob
@@ -154,7 +154,7 @@ static void alarmDetailedMessageDebug(char* const rawMessage) {
     Fire the one shot on the alarm arm / disarm output.
 */
 void alarmFireOneShot(void) {
-    outputsSetOutput(alarmCtrl, {oneshot, PWMRANGE, 5, 0, 5});
+    outputsSetOutputByName(alarmCtrl, {oneshot, PWMRANGE, 5, 0, 5});
 }
 
 /**

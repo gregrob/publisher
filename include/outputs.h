@@ -6,15 +6,7 @@
 #define OUTPUTS_CYCLIC_RATE (100)
 
 
-// Enumeration for outputs (index must align into configuration structure)
-enum outputIndex {
-    wifiCfg       = 0,
-    wifiRun       = 1,
-    alarmCtrl     = 2,
-    OP_LAST_ITEM  = 3
-};
-
-// Enumerator for output control types
+// Output control types
 enum outputControlType {
     direct    = 0,
     oneshot   = 1,
@@ -24,11 +16,22 @@ enum outputControlType {
 // Structure for output cycle configuration
 typedef struct {
     outputControlType   mode;
-    unsigned int        levelHigh;
-    unsigned int        durationHigh;
-    unsigned int        levelLow;
-    unsigned int        durationLow;
-} outputCycleConfiguration;
+
+    uint16_t            levelHigh;
+    uint16_t            durationHigh;
+    uint16_t            levelLow;
+    uint16_t            durationLow;
+} outputCycleConfig;
+
+// Structure for output configuration data
+typedef struct {
+    const char *        name;
+    const uint8_t       pin;
+
+    const uint16_t      initialLevel;    
+    outputCycleConfig   currentCycle;
+    outputCycleConfig   nextCycle;
+} outputConfiguration;
 
 
 /**
@@ -42,11 +45,11 @@ void outputsInit(void);
 void outputsCyclicTask(void);
 
 /**
-    Control an output.
-    
-    @param[in]     output index of the output to control
-    @param[in]     cycleConfiguration how the output should be controlled
+    Control a indexed output.
+  
+    @param[in]     output index of the output to control.
+    @param[in]     cycleConfig how the output should be controlled.
 */
-void outputsSetOutput(const outputIndex output, const outputCycleConfiguration cycleConfiguration);
+void outputsSetOutputByIndex(const uint32_t index, const outputCycleConfig cycleConfig);
 
 #endif
