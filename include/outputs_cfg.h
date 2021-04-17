@@ -42,7 +42,7 @@ const uint32_t outputsGetConfigPointerRW(outputConfiguration ** activeOutputConf
 /**
     Control a named output.
   
-    @param[in]     name index of the output to control.
+    @param[in]     name name of the output to control.
     @param[in]     cycleConfig how the output should be controlled.
 */
 void outputsSetOutputByName(const outputIndex name, const outputCycleConfig cycleConfig);

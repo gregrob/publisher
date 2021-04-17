@@ -10,7 +10,7 @@ static outputConfiguration outputConfig[] = {{"configMode",  OUTPUTS_PIN_MAP_CFG
                                              {"alarmCtrl",   OUTPUTS_PIN_MAP_ALARM_CTRL, LOW, {direct, 0, 0, 0, 0}, {direct, 0, 0, 0, 0}}
 };
 
-// NVM configuration size (in elements)
+// Output configuration size (in elements)
 static const uint32_t outputsConfigSizeElements = (sizeof(outputConfig) / sizeof(outputConfig[0]));
 
 
@@ -39,7 +39,7 @@ const uint32_t outputsGetConfigPointerRW(outputConfiguration ** activeOutputConf
 /**
     Control a named output.
   
-    @param[in]     name index of the output to control.
+    @param[in]     name name of the output to control.
     @param[in]     cycleConfig how the output should be controlled.
 */
 void outputsSetOutputByName(const outputIndex name, const outputCycleConfig cycleConfig) {
