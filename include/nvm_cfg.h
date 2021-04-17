@@ -58,7 +58,8 @@ typedef struct __attribute__ ((packed)) {
 
 // IO NVM structure
 typedef struct __attribute__ ((packed)) {
-     unsigned int           ledDimmingLevel;                            // LED Dimming Level
+     uint16_t               ledBrightnessRunMode;                       // Run mode LED brightness
+     uint16_t               ledBrightnessConfigMode;                    // Config mode LED brightness
      
      nvmFooterCrc           footer;
 } nvmSubConfigIO;

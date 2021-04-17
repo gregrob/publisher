@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "debug.h"
 #include "nvm_cfg.h"
+#include "outputs_cfg.h"
 #include "messages_tx.h"
 
 
@@ -70,7 +71,8 @@
 #define HTTP_TEXT_MQTT_PWD         "MQTT Password"
 #define HTTP_TEXT_MQTT_TOPIC       "MQTT Root Topic"
 
-#define HTTP_TEXT_IO_DIMMING       "LED Dimming Level"
+#define HTTP_TEXT_IO_RUN_LED       "Run Mode LED Brightness"
+#define HTTP_TEXT_IO_CFG_LED       "Config Mode LED Brightness"
 
 #define HTTP_TEXT_ALARM_ADDRESS    "Home Address"
 
@@ -90,7 +92,8 @@ const char* httpTextMqttPassword    = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_MQTT_PW
 const char* httpTextMqttTopicRoot   = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_MQTT_TOPIC       HTTP_PARAM_TEXT_END;
 
 const char* httpTextHeadingIO       = HTTP_PARAM_HEADING_START "IO Settings"              HTTP_PARAM_HEADING_END;
-const char* httpTextLedDimmingLevel = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_IO_DIMMING       HTTP_PARAM_TEXT_END;
+const char* httpTextRunLedBright    = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_IO_RUN_LED       HTTP_PARAM_TEXT_END;
+const char* httpTextCfgLedBright    = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_IO_CFG_LED       HTTP_PARAM_TEXT_END;
 
 const char* httpTextHeadingAlarm    = HTTP_PARAM_HEADING_START "Alarm Settings"           HTTP_PARAM_HEADING_END;
 const char* httpTextHomeAddress     = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_ALARM_ADDRESS    HTTP_PARAM_TEXT_END;
@@ -195,6 +198,14 @@ static void findCurrentModule(void) {
     Callback when WiFi fails to connect.
 */
 static void callbackFailedWifiConnect(WiFiManager *myWiFiManager) {
+    
+    // Pointer to the RAM mirror
+    const nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+
+    // Debug message
     String debugMessage;
 
     debugMessage = (String() + "Entering WiFi configuration mode.");
@@ -202,6 +213,9 @@ static void callbackFailedWifiConnect(WiFiManager *myWiFiManager) {
 
     debugMessage = (String() + "SSID: " + myWiFiManager->getConfigPortalSSID() + ", IP: " + WiFi.softAPIP().toString());
     debugLog(&debugMessage, warning);
+
+    // Turn on the config mode LED
+    outputsSetOutputByName(configMode, {direct, ramMirrorPtr->io.ledBrightnessConfigMode, 0, 0, 0});
 }
 
 /**
@@ -258,8 +272,11 @@ void setupWifi() {
     // String storage for errorCounter integer (text entry field)
     char nvmErrorCounterString[STRNLEN_INT(NVM_MAX_ERROR) + 1];
 
-    // String storage for ledDimmingLevel integer (text entry field)
-    char ledDimmingLevelString[STRNLEN_INT(PWMRANGE) + 1];
+    // String storage for run LED dimming integer (text entry field)
+    char ledRunDimmingString[STRNLEN_INT(PWMRANGE) + 1];
+
+    // String storage for config LED dimming integer (text entry field)
+    char ledCfgDimmingString[STRNLEN_INT(PWMRANGE) + 1];
 
     #ifdef WIFI_RESET_TEST
         // Reset wifi early during initialisation
@@ -336,18 +353,23 @@ void setupWifi() {
 
     // IO configs
     WiFiManagerParameter textHeadingIO(httpTextHeadingIO);
-    WiFiManagerParameter textLedDimmingLevel(httpTextLedDimmingLevel);
-    sprintf(ledDimmingLevelString, "%d", ramMirrorPtr->io.ledDimmingLevel);
-    WiFiManagerParameter fieldLedDimmingLevel("ledDimmingLevel", HTTP_TEXT_IO_DIMMING, ledDimmingLevelString, STRNLEN_INT(PWMRANGE));
+    WiFiManagerParameter textTextRunLedBright(httpTextRunLedBright);
+    sprintf(ledRunDimmingString, "%d", ramMirrorPtr->io.ledBrightnessRunMode);
+    WiFiManagerParameter fieldRunLedBright("ledBrightnessRunMode", HTTP_TEXT_IO_RUN_LED, ledRunDimmingString, STRNLEN_INT(PWMRANGE));
+    WiFiManagerParameter textCfgLedBright(httpTextCfgLedBright);
+    sprintf(ledCfgDimmingString, "%d", ramMirrorPtr->io.ledBrightnessConfigMode);
+    WiFiManagerParameter fieldCfgLedBright("ledBrightnessConfigMode", HTTP_TEXT_IO_CFG_LED, ledCfgDimmingString, STRNLEN_INT(PWMRANGE));
 
     wifiManager.addParameter(&textHeadingIO);
-    wifiManager.addParameter(&textLedDimmingLevel);
-    wifiManager.addParameter(&fieldLedDimmingLevel);
+    wifiManager.addParameter(&textTextRunLedBright);
+    wifiManager.addParameter(&fieldRunLedBright);
+    wifiManager.addParameter(&textCfgLedBright);
+    wifiManager.addParameter(&fieldCfgLedBright);
 
     // Alarm configs
     WiFiManagerParameter textHeadingAlarm(httpTextHeadingAlarm);
     WiFiManagerParameter textHomeAddress(httpTextHomeAddress);
-    WiFiManagerParameter fieldHomeAddress("homeAddress", HTTP_TEXT_IO_DIMMING, ramMirrorPtr->alarm.homeAddress, NVM_MAX_LENGTH_ADDRESS);
+    WiFiManagerParameter fieldHomeAddress("homeAddress", HTTP_TEXT_ALARM_ADDRESS, ramMirrorPtr->alarm.homeAddress, NVM_MAX_LENGTH_ADDRESS);
 
     wifiManager.addParameter(&textHeadingAlarm);
     wifiManager.addParameter(&textHomeAddress);
@@ -359,6 +381,9 @@ void setupWifi() {
 
     // Try auto connect
     bool connectionStatus = wifiManager.autoConnect(publisherModules[activeModule].moduleHostName, ramMirrorPtr->network.wifiAPPassword);
+
+    // Turn off the config mode LED
+    outputsSetOutputByName(configMode, {direct, 0, 0, 0, 0});
 
     // If there is data to update
     if(configSave == true) {
@@ -381,7 +406,8 @@ void setupWifi() {
         nvmUpdateRamMirrorCrcByName(nvmMqttStruc);
 
         // IO configs
-        ramMirrorPtr->io.ledDimmingLevel = (unsigned int) atoi(fieldLedDimmingLevel.getValue());
+        ramMirrorPtr->io.ledBrightnessConfigMode = (uint16_t) atoi(fieldCfgLedBright.getValue());
+        ramMirrorPtr->io.ledBrightnessRunMode = (uint16_t) atoi(fieldRunLedBright.getValue());
         nvmUpdateRamMirrorCrcByName(nvmIOStruc);
 
         // Alarm configs
@@ -407,6 +433,9 @@ void setupWifi() {
     // Reaching this point means WiFi is sucessfully connected
     debugMessage = (String() + "Connected to " + WiFi.SSID() + " with IP address " + WiFi.localIP().toString());
     debugLog(&debugMessage, info);
+
+    // Blink the WiFi running LED
+    outputsSetOutputByName(runMode, {flash, ramMirrorPtr->io.ledBrightnessRunMode, 1, 0, 19});
 }
 
 /**
