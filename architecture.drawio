@@ -1,11 +1,11 @@
 <mxfile>
     <diagram id="_CVl8sColJwZ4kO43qYV" name="Page-1">
-        <mxGraphModel dx="1089" dy="604" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="1553" dy="606" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
                 <mxCell id="27" value="nvm" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#008a00;strokeColor=#005700;fontColor=#ffffff;" parent="1" vertex="1">
-                    <mxGeometry x="320" y="752" width="300" height="138" as="geometry">
+                    <mxGeometry x="320" y="752" width="300" height="164" as="geometry">
                         <mxRectangle x="120" y="220" width="100" height="26" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
@@ -23,13 +23,18 @@
                     </mxCell>
                 </object>
                 <object label="+ nvmComittRamMirror(void): void" id="53">
-                    <mxCell style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="27">
+                    <mxCell style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="27" vertex="1">
                         <mxGeometry y="86" width="300" height="26" as="geometry"/>
                     </mxCell>
                 </object>
-                <object label="+ nvmInit(void): void" id="54">
-                    <mxCell style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="27">
+                <object label="+ nvmTransmitStatusMessage(void): void" id="58">
+                    <mxCell style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="27" vertex="1">
                         <mxGeometry y="112" width="300" height="26" as="geometry"/>
+                    </mxCell>
+                </object>
+                <object label="+ nvmInit(void): void" id="54">
+                    <mxCell style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="27" vertex="1">
+                        <mxGeometry y="138" width="300" height="26" as="geometry"/>
                     </mxCell>
                 </object>
                 <mxCell id="33" value="nvm_cfg" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff;" parent="1" vertex="1">
@@ -40,10 +45,10 @@
                 <mxCell id="34" value="- nvmRamMirror: nvmCompleteStructure" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="33" vertex="1">
                     <mxGeometry y="26" width="380" height="26" as="geometry"/>
                 </mxCell>
-                <mxCell id="48" value="- nvmConfig: nvmStructureConfig " style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="33">
+                <mxCell id="48" value="- nvmConfig: nvmStructureConfig " style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="33" vertex="1">
                     <mxGeometry y="52" width="380" height="26" as="geometry"/>
                 </mxCell>
-                <mxCell id="49" value="- nvmSubConfig[xxx]Default: nvmSubConfig[xxx] " style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="33">
+                <mxCell id="49" value="- nvmSubConfig[xxx]Default: nvmSubConfig[xxx] " style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="33" vertex="1">
                     <mxGeometry y="78" width="380" height="26" as="geometry"/>
                 </mxCell>
                 <mxCell id="35" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" parent="33" vertex="1">
@@ -58,13 +63,13 @@
                 <mxCell id="38" value="+ nvmGetConfigPointerRO(nvmStructureConfig **): uint32_t" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="33" vertex="1">
                     <mxGeometry y="164" width="380" height="26" as="geometry"/>
                 </mxCell>
-                <mxCell id="57" value="+ nvmUpdateRamMirrorCrcByName(nvmSubConfigIndex): void" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="33">
+                <mxCell id="57" value="+ nvmUpdateRamMirrorCrcByName(nvmSubConfigIndex): void" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="33" vertex="1">
                     <mxGeometry y="190" width="380" height="26" as="geometry"/>
                 </mxCell>
                 <mxCell id="41" value="EEPROM" style="html=1;fillColor=#76608a;strokeColor=#432D57;fontColor=#ffffff;" parent="1" vertex="1">
-                    <mxGeometry x="320" y="915" width="150" height="31" as="geometry"/>
+                    <mxGeometry x="320" y="930" width="150" height="31" as="geometry"/>
                 </mxCell>
-                <mxCell id="45" value="" style="endArrow=classic;startArrow=classic;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="41" edge="1">
+                <mxCell id="45" value="" style="endArrow=classic;startArrow=classic;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.347;entryY=1.026;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="41" target="54" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="597" y="732" as="sourcePoint"/>
                         <mxPoint x="440" y="892" as="targetPoint"/>
@@ -76,16 +81,16 @@
                         <mxPoint x="557" y="576" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="50" value="CRC32 lib" style="html=1;fillColor=#647687;strokeColor=#314354;fontColor=#ffffff;" vertex="1" parent="1">
-                    <mxGeometry x="480" y="915" width="140" height="30" as="geometry"/>
+                <mxCell id="50" value="CRC32 lib" style="html=1;fillColor=#647687;strokeColor=#314354;fontColor=#ffffff;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="931" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="52" value="" style="endArrow=classic;html=1;exitX=0.651;exitY=1.103;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="54" target="50">
+                <mxCell id="52" value="" style="endArrow=classic;html=1;exitX=0.627;exitY=1.026;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="54" target="50" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="440" y="762" as="sourcePoint"/>
                         <mxPoint x="720" y="862" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="55" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="41" target="41">
+                <mxCell id="55" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="41" target="41" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
             </root>
