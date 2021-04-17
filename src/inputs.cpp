@@ -4,42 +4,23 @@
 #include "inputs_cfg.h"
 
 
-// Reset value for inputs debounce timer
-#define INPUTS_DEBOUNCE_TIMER_RESET    (4)
-
-
-// Structure for input configuration data
-typedef struct {
-    const char *                name;
-    const uint8_t               pin;
-    const bool                  inverted;
-        
-    const unsigned int          debounceTimerReset;
-    unsigned int                debounceTimer;
-
-    const int                   initialValue;
-    int                         lastValue;
-    int                         currentValue;
-    int                         debouncedValue;
-} inputConfiguration;
-
-
-// Input configuraiton structure
-static inputConfiguration moduleInputConfiguration[] = {{"reset switch", INPUTS_PIN_MAP_RESET, true, 0, 0, LOW, LOW, LOW, LOW},
-};
-
-
 /**
     Initialise the inputs module and initial states of the pins.
 */
 void inputsInit(void) {
 
+    // Pointer to the outputs configuration
+    inputConfiguration * inputsConfigPtr;
+
+    // Set-up pointer to configuration and get its size
+    const uint32_t inputsConfigSize = inputsGetConfigPointerRW(&inputsConfigPtr);
+    
     // Initialise the required pins to inputs with their initial value
-    for(unsigned int i = 0; i < (sizeof(moduleInputConfiguration)/sizeof(moduleInputConfiguration[0])); i++) {
-        pinMode(moduleInputConfiguration[i].pin, INPUT);
-        moduleInputConfiguration[i].lastValue = moduleInputConfiguration[i].initialValue;
-        moduleInputConfiguration[i].currentValue = moduleInputConfiguration[i].initialValue;
-        moduleInputConfiguration[i].debouncedValue = moduleInputConfiguration[i].initialValue;
+    for(unsigned int i = 0; i < inputsConfigSize; i++) {
+        pinMode(inputsConfigPtr[i].pin, INPUT);
+        inputsConfigPtr[i].lastValue = inputsConfigPtr[i].initialValue;
+        inputsConfigPtr[i].currentValue = inputsConfigPtr[i].initialValue;
+        inputsConfigPtr[i].debouncedValue = inputsConfigPtr[i].initialValue;
     }
 }
 
@@ -49,49 +30,61 @@ void inputsInit(void) {
 */
 void inputsCyclicTask(void) {
 
+    // Pointer to the outputs configuration
+    inputConfiguration * inputsConfigPtr;
+
+    // Set-up pointer to configuration and get its size
+    const uint32_t inputsConfigSize = inputsGetConfigPointerRW(&inputsConfigPtr);
+
     // Handle all pins
-    for (unsigned int i = 0; i < (sizeof(moduleInputConfiguration)/sizeof(moduleInputConfiguration[0])); i++) {
+    for (unsigned int i = 0; i < inputsConfigSize; i++) {
         
         // Perform inversion if necessary
-        if (moduleInputConfiguration[i].inverted == true) {
-            moduleInputConfiguration[i].currentValue = !digitalRead(moduleInputConfiguration[i].pin);
+        if (inputsConfigPtr[i].inverted == true) {
+            inputsConfigPtr[i].currentValue = !digitalRead(inputsConfigPtr[i].pin);
         }
         else {
-            moduleInputConfiguration[i].currentValue = digitalRead(moduleInputConfiguration[i].pin);
+            inputsConfigPtr[i].currentValue = digitalRead(inputsConfigPtr[i].pin);
         }
         
         // If there is a change in pin state, restart debounce timers
-        if (moduleInputConfiguration[i].currentValue != moduleInputConfiguration[i].lastValue) {
-            moduleInputConfiguration[i].debounceTimer = moduleInputConfiguration[i].debounceTimerReset;
+        if (inputsConfigPtr[i].currentValue != inputsConfigPtr[i].lastValue) {
+            inputsConfigPtr[i].debounceTimer = inputsConfigPtr[i].debounceTimerReset;
         }
 
         // If the debounce timer is runing handle it
-        if (moduleInputConfiguration[i].debounceTimer != 0) {
-            moduleInputConfiguration[i].debounceTimer--;
+        if (inputsConfigPtr[i].debounceTimer != 0) {
+            inputsConfigPtr[i].debounceTimer--;
         }
         // Timer expired without state change so set debounced value
         else {
-            moduleInputConfiguration[i].debouncedValue = moduleInputConfiguration[i].currentValue;
+            inputsConfigPtr[i].debouncedValue = inputsConfigPtr[i].currentValue;
         }
 
         // Update lastValue for next round
-        moduleInputConfiguration[i].lastValue = moduleInputConfiguration[i].currentValue;
+        inputsConfigPtr[i].lastValue = inputsConfigPtr[i].currentValue;
     }
 }
 
 
 /**
-    Read a debounced input.
-    
-    @param[in]     input index of the input to read
-    @return        the current debounced value of the pin being read
+    Read a indexed input (debounced).
+  
+    @param[in]     index index of the input to read
+    @return        debounced value at the input.
 */
-int inputsReadInput(const inputIndex input) {
-    int returnValue = LOW;
+uint8_t inputsReadInputByIndex(const uint32_t index) {
+    // Pointer to the outputs configuration
+    const inputConfiguration * inputsConfigPtr;
+
+    // Set-up pointer to configuration and get its size
+    (void) inputsGetConfigPointerRO(&inputsConfigPtr);
+
+    uint32_t returnValue = LOW;
 
     // Make sure a valid output is selected and levels are within range
-    if ((unsigned int) input < inputIndex::IP_LAST_ITEM) {
-        returnValue = moduleInputConfiguration[input].debouncedValue;
+    if ((uint32_t) index < inputIndex::inputsNumberOfTypes) {
+        returnValue = inputsConfigPtr[index].debouncedValue;
     } 
 
     return(returnValue);

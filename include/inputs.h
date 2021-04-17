@@ -1,16 +1,27 @@
 #ifndef INPUTS_H
 #define INPUTS_H
 
-
 // Call rate for the cyclic taks
 #define INPUTS_CYCLIC_RATE (10)
 
+// Reset value for inputs debounce timer
+#define INPUTS_DEBOUNCE_TIMER_RESET    (4)
 
-// Enumeration for inputs (index must align into configuration structure)
-enum inputIndex {
-    resetSw       = 0,
-    IP_LAST_ITEM  = 1
-};
+
+// Structure for input configuration data
+typedef struct {
+    const char *           name;
+    const uint8_t          pin;
+    const uint8_t          inverted;
+        
+    const uint16_t         debounceTimerReset;
+    uint16_t               debounceTimer;
+
+    const uint8_t          initialValue;
+    uint8_t                lastValue;
+    uint8_t                currentValue;
+    uint8_t                debouncedValue;
+} inputConfiguration;
 
 
 /**
@@ -24,11 +35,11 @@ void inputsInit(void);
 void inputsCyclicTask(void);
 
 /**
-    Read a debounced input.
-    
-    @param[in]     input index of the input to read
-    @return        the current debounced value of the pin being read
+    Read a indexed input (debounced).
+  
+    @param[in]     index index of the input to read
+    @return        debounced value at the input.
 */
-int inputsReadInput(const inputIndex input);
+uint8_t inputsReadInputByIndex(const uint32_t index);
 
 #endif
