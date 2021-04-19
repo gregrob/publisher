@@ -7,12 +7,12 @@
 
 // Reset state machine
 enum resetCtrlStm {
-    stmIdle,
+    stmResetIdle,
     stmReset,
     stmResetWiFi,
     stmResetWiFiNvm,
-    stmAllowCancel,
-    stmAction
+    stmResetAllowCancel,
+    stmResetAction
 };
 
 // Reset types

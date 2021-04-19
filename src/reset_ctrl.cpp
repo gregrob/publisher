@@ -27,12 +27,12 @@
 
 // Reset state machine state names (must align with the enum)
 static const char * resetCtrlStateNames[] = {
-    "stmIdle",
+    "stmResetIdle",
     "stmReset",
     "stmResetWiFi",
     "stmResetWiFiNvm",
-    "stmAllowCancel",
-    "stmAction"
+    "stmResetAllowCancel",
+    "stmResetAction"
 };
 
 // Reset types names (must align with the enum)
@@ -47,7 +47,7 @@ static const char *  resetCtrlTypesNames[] = {
 static resetCtrlTypes resetCtrlRequestedResetType = rstTypeNone;
 
 // Current state
-static resetCtrlStm resetCtrlCurrentState = stmIdle;
+static resetCtrlStm resetCtrlCurrentState = stmResetIdle;
 
 // Switch allowed
 static uint8_t resetCtrlResetSwitchEnabled = false;
@@ -110,7 +110,7 @@ void restCtrlInit(void) {
     resetCtrlResetSwitchEnabled = ramMirrorPtr->io.resetSwitchEnabled;
 
     resetCtrlRequestedResetType = rstTypeNone;
-    resetCtrlCurrentState = stmIdle;
+    resetCtrlCurrentState = stmResetIdle;
 }
 
 
@@ -132,7 +132,7 @@ void restCtrlStateMachine(void) {
     static uint32_t switchHeldTimer;
     
     // Next state
-    static resetCtrlStm lastState = stmIdle;
+    static resetCtrlStm lastState = stmResetIdle;
 
     // Next state
     resetCtrlStm nextState = resetCtrlCurrentState;
@@ -145,11 +145,11 @@ void restCtrlStateMachine(void) {
     // Handle the state machine
     switch(resetCtrlCurrentState) {
         
-        case(stmIdle):
+        case(stmResetIdle):
             
             // PRIO 1 - Check if a reset request arrives during idle
             if (resetCtrlRequestedResetType != rstTypeNone) {
-                nextState = stmAllowCancel;
+                nextState = stmResetAllowCancel;
                 switchHeldTimer = SECS_TO_CALLS(RESET_CTRL_CLR_CANCEL_SLO_S);
             }
 
@@ -183,7 +183,7 @@ void restCtrlStateMachine(void) {
             
             // Switch released
             else {
-                nextState = stmAllowCancel;
+                nextState = stmResetAllowCancel;
                 switchHeldTimer = SECS_TO_CALLS(RESET_CTRL_CLR_CANCEL_FST_S);
             }
 
@@ -209,7 +209,7 @@ void restCtrlStateMachine(void) {
             
             // Switch released
             else {
-                nextState = stmAllowCancel;
+                nextState = stmResetAllowCancel;
                 switchHeldTimer = SECS_TO_CALLS(RESET_CTRL_CLR_CANCEL_SLO_S);
             }
 
@@ -219,13 +219,13 @@ void restCtrlStateMachine(void) {
             
             // Switch released
             if(resetSwCurrentState != HIGH) {
-                nextState = stmAllowCancel;
+                nextState = stmResetAllowCancel;
                 switchHeldTimer = SECS_TO_CALLS(RESET_CTRL_CLR_CANCEL_SLO_S);
             }
 
             break;
 
-         case(stmAllowCancel):
+         case(stmResetAllowCancel):
 
             // First transition to this state
             if(resetCtrlCurrentState != lastState) {
@@ -244,27 +244,27 @@ void restCtrlStateMachine(void) {
                 // Timer elapsed
                 else
                 {
-                    nextState = stmAction;
+                    nextState = stmResetAction;
                 }
             }
 
             // Switch pressed
             else {
-                nextState = stmIdle;
+                nextState = stmResetIdle;
                 resetCtrlRequestedResetType = rstTypeNone;
             }
 
             break;
 
-        case(stmAction):
+        case(stmResetAction):
             // There should be no coming back from the following call
             restCtrlImmediateHandle(resetCtrlRequestedResetType);
-            nextState = stmIdle;
+            nextState = stmResetIdle;
             resetCtrlRequestedResetType = rstTypeNone;
             break;
 
         default:
-            nextState = stmIdle;
+            nextState = stmResetIdle;
             resetSwLastState = HIGH;
             resetCtrlRequestedResetType = rstTypeNone;
             break;
@@ -292,7 +292,7 @@ void restCtrlStateMachine(void) {
 void restCtrlSetResetRequest(const resetCtrlTypes reqeustedRest) {
     
     // State machine in stmIdle and request in bounds
-    if((resetCtrlCurrentState == stmIdle) && (reqeustedRest < rstTypeNumberOfTypes)) {
+    if((resetCtrlCurrentState == stmResetIdle) && (reqeustedRest < rstTypeNumberOfTypes)) {
         resetCtrlRequestedResetType = reqeustedRest;
     }
 }
