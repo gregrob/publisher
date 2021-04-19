@@ -256,7 +256,7 @@ static const char* wifiStatusToString(wl_status_t status) {
 /**
     WiFi set-up and connect.
 */
-void setupWifi() {
+void setupWifi(void) {
     String debugMessage;
     WiFiManager wifiManager;    
 
@@ -447,7 +447,7 @@ void setupWifi() {
 /**
     WiFi check and prints status to the console.
 */
-void checkWifi() {
+void checkWifi(void) {
     String debugMessage;
 
     debugMessage = (String() + "WiFi status: " + wifiStatusToString(WiFi.status()) + ", RSSI: " + WiFi.RSSI());
@@ -465,10 +465,24 @@ void checkWifi() {
 /**
     Reset wifi settings.
 */
-void wifiReset() {
+void wifiReset(void) {
     WiFiManager wifiManager;
     
     wifiManager.resetSettings();
+}
+
+
+/**
+    Returns true when WiFi is connected.
+*/
+bool wifiIsConnected(void) {
+    bool returnValue = false;
+
+    if (WiFi.status() == WL_CONNECTED) {
+        returnValue = true;
+    }
+
+    return(returnValue);
 }
 
 

@@ -40,17 +40,22 @@ wifiModuleDetail* const getWiFiModuleDetails(void);
 /**
     WiFi set-up and connect.
 */
-void setupWifi();
+void setupWifi(void);
 
 /**
     WiFi check and prints status to the console.
 */
-void checkWifi();
+void checkWifi(void);
 
 /**
     Reset wifi settings.
 */
-void wifiReset();
+void wifiReset(void);
+
+/**
+    Returns true when WiFi is connected.
+*/
+bool wifiIsConnected(void);
 
 /**
     Transmit a wifi message.
