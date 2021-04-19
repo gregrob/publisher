@@ -442,8 +442,6 @@ void setupWifi() {
     debugMessage = (String() + "Connected to " + WiFi.SSID() + " with IP address " + WiFi.localIP().toString());
     debugLog(&debugMessage, info);
 
-    // Blink the WiFi running LED
-    outputsSetOutputByName(runMode, {flash, ramMirrorPtr->io.ledBrightnessRunMode, 1, 0, 19});
 }
 
 /**
