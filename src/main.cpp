@@ -14,6 +14,7 @@
 #include "outputs.h"
 
 #include "reset_ctrl.h"
+#include "status_ctrl.h"
 
 // Local function definitions
 void periodicMessageTx(void);
@@ -38,6 +39,7 @@ Task alarmTriggerDebounceTask(100, TASK_FOREVER, &alarmTriggerDebounce);
 Task taskInputsCyclic(INPUTS_CYCLIC_RATE, TASK_FOREVER, &inputsCyclicTask);
 Task taskOutputsCyclic(OUTPUTS_CYCLIC_RATE, TASK_FOREVER, &outputsCyclicTask);
 Task taskResetCtrl(RESET_CTRL_CYCLIC_RATE, TASK_FOREVER, &restCtrlStateMachine);
+Task taskStatusCtrl(STATUS_CTRL_CYCLIC_RATE, TASK_FOREVER, &statusCtrlStateMachine);
 Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 
 void testo() {
@@ -60,6 +62,7 @@ void setup(void) {
 
     // STEP 3 - Set up the applications
     restCtrlInit();
+    statusCtrlInit();
 
     //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);
     //outputsSetOutput(wifiCfg, flash, 1000, 0, 1, 10);
@@ -89,6 +92,7 @@ void setup(void) {
     scheduler.addTask(taskInputsCyclic);
     scheduler.addTask(taskOutputsCyclic);
     scheduler.addTask(taskResetCtrl);
+    scheduler.addTask(taskStatusCtrl);
     scheduler.addTask(taskPeriodicMessageTx);
 
     wifiStatus.enable();
@@ -100,6 +104,7 @@ void setup(void) {
     taskInputsCyclic.enable();
     taskOutputsCyclic.enable();
     taskResetCtrl.enable();
+    taskStatusCtrl.enable();
     taskPeriodicMessageTx.enable();
 
     scheduler.addTask(switcher);

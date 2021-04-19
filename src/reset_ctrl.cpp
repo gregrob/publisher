@@ -131,7 +131,7 @@ void restCtrlStateMachine(void) {
     // Switch held timer
     static uint32_t switchHeldTimer;
     
-    // Next state
+    // Last state
     static resetCtrlStm lastState = stmResetIdle;
 
     // Next state
