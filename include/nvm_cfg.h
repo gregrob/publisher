@@ -60,6 +60,7 @@ typedef struct __attribute__ ((packed)) {
 typedef struct __attribute__ ((packed)) {
      uint16_t               ledBrightnessRunMode;                       // Run mode LED brightness
      uint16_t               ledBrightnessConfigMode;                    // Config mode LED brightness
+     uint8_t                resetSwitchEnabled;                         // Reset switch enabled
      
      nvmFooterCrc           footer;
 } nvmSubConfigIO;

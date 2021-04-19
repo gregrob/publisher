@@ -12,17 +12,15 @@
 //#define NVM_CORRUPT_TEST
 
 
-#ifdef NVM_CORRUPT_TEST
-// Corrupted NVM default configuration
-static const nvmCompleteStructure corruptNvmRamMirror = {0};
-#endif
+// Cleared NVM contents
+static const nvmCompleteStructure nvmClearRamMirror = {0};
 
 
-#ifdef NVM_CORRUPT_TEST
 /**
-    Corrupt the NVM for testing purposes.
+    Clear the NVM contents.
+    This call is BLOCKING.
 */
-static void nvmCorrupt(void) {
+void nvmClear(void) {
     
     // Pointer to the RAM mirror
     nvmCompleteStructure * ramMirrorPtr;
@@ -31,11 +29,10 @@ static void nvmCorrupt(void) {
     (void)nvmGetRamMirrorPointerRW(&ramMirrorPtr);
 
     // Comitt a corrupted default configuration and reload RAM mirror
-    EEPROM.put(NVM_BASE_ADDRESS, corruptNvmRamMirror);
+    EEPROM.put(NVM_BASE_ADDRESS, nvmClearRamMirror);
     EEPROM.commit();
     EEPROM.get(NVM_BASE_ADDRESS, *ramMirrorPtr);
 }
-#endif
 
 
 /**
@@ -204,7 +201,7 @@ void nvmInit(void) {
 
     // Check integrity
     #ifdef NVM_CORRUPT_TEST
-        nvmCorrupt();
+        nvmClear();
     #else
         nvmCheckIntegrity();
     #endif

@@ -65,6 +65,12 @@ typedef struct {
 
 
 /**
+    Clear the NVM contents.
+    This call is BLOCKING.
+*/
+void nvmClear(void);
+
+/**
     Update indexed RAM mirror structure CRC based on the current structure contents.
   
     @param[in]     index index of the NVM structure the will have the CRC update.

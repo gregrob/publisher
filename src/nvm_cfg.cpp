@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "nvm_cfg.h"
+#include "utils.h"
 
 
 // NVM ROM default for the CRC footer in every NVM structure
@@ -16,7 +17,7 @@ static const nvmSubConfigNetwork nvmSubConfigNetworkDefault = {"password", "pass
 static const nvmSubConfigMqtt nvmSubConfigMqttDefault = {"swarm.max.lan", "testuser", "password", "publisher", nvmFooterCrcDefault};
 
 // NVM ROM defaults for nvmSubConfigIO
-static const nvmSubConfigIO nvmSubConfigIODefault = {PWMRANGE, PWMRANGE, nvmFooterCrcDefault};
+static const nvmSubConfigIO nvmSubConfigIODefault = {PWMRANGE, PWMRANGE, ENABLED, nvmFooterCrcDefault};
 
 // NVM ROM defaults for nvmSubConfigAlarm
 static const nvmSubConfigAlarm nvmSubConfigAlarmDefault = {"Home Address", nvmFooterCrcDefault};
