@@ -10,6 +10,7 @@
 #include "mqtt.h"
 #include "alarm.h"
 #include "outputs_cfg.h"
+#include "reset_ctrl.h"
 
 // Definitions
 #define MQTT_PORT               (1883)
@@ -78,7 +79,8 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
                     debugMessage = (String() + "MQTT found JSON key: " + JSON_DOC_VAR_RESET);
                     debugLog(&debugMessage, info);
 
-                    resetWifi();
+                    resetCtrlTypes resetCommanded = doc[JSON_DOC_VAR_RESET];
+                    restCtrlSetResetRequest(resetCommanded);
                 }
                 //uint16_t a = doc["command"];
                 //uint16_t b = doc["hi"];

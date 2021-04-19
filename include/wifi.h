@@ -48,9 +48,9 @@ void setupWifi();
 void checkWifi();
 
 /**
-    WiFi reset.
+    Reset wifi settings.
 */
-void resetWifi();
+void wifiReset();
 
 /**
     Transmit a wifi message.

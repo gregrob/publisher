@@ -11,11 +11,9 @@
 #include "debug.h"
 #include "nvm_cfg.h"
 #include "outputs_cfg.h"
+#include "reset_ctrl.h"
 #include "messages_tx.h"
 
-
-// Use this to force a wifi settings rest and enter config mode
-//#define WIFI_RESET_TEST
 
 // Size of a MAC address char buffer
 #define WIFI_BUFFER_SIZE_MAC    (12)
@@ -73,6 +71,7 @@
 
 #define HTTP_TEXT_IO_RUN_LED       "Run Mode LED Brightness"
 #define HTTP_TEXT_IO_CFG_LED       "Config Mode LED Brightness"
+#define HTTP_TEXT_IO_RESET_SW      "Enable Reset Switch"
 
 #define HTTP_TEXT_ALARM_ADDRESS    "Home Address"
 
@@ -94,6 +93,7 @@ const char* httpTextMqttTopicRoot   = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_MQTT_TO
 const char* httpTextHeadingIO       = HTTP_PARAM_HEADING_START "IO Settings"              HTTP_PARAM_HEADING_END;
 const char* httpTextRunLedBright    = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_IO_RUN_LED       HTTP_PARAM_TEXT_END;
 const char* httpTextCfgLedBright    = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_IO_CFG_LED       HTTP_PARAM_TEXT_END;
+const char* httpTextCfgResetSw      = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_IO_RESET_SW      HTTP_PARAM_TEXT_END;
 
 const char* httpTextHeadingAlarm    = HTTP_PARAM_HEADING_START "Alarm Settings"           HTTP_PARAM_HEADING_END;
 const char* httpTextHomeAddress     = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_ALARM_ADDRESS    HTTP_PARAM_TEXT_END;
@@ -278,10 +278,8 @@ void setupWifi() {
     // String storage for config LED dimming integer (text entry field)
     char ledCfgDimmingString[STRNLEN_INT(PWMRANGE) + 1];
 
-    #ifdef WIFI_RESET_TEST
-        // Reset wifi early during initialisation
-        resetWifi();
-    #endif
+    // String storage for reset switch config (text entry field)
+    char resetSwCfgString[STRNLEN_INT(1) + 1];
     
     bufferMacString();
     findCurrentModule();
@@ -300,7 +298,6 @@ void setupWifi() {
 
     // Save parameters even if connection is unsuccessful
     wifiManager.setBreakAfterConfig(true);
-
 
     // Nvm configs
     WiFiManagerParameter textHeadingNvm(httpTextHeadingNvm);
@@ -359,12 +356,17 @@ void setupWifi() {
     WiFiManagerParameter textCfgLedBright(httpTextCfgLedBright);
     sprintf(ledCfgDimmingString, "%d", ramMirrorPtr->io.ledBrightnessConfigMode);
     WiFiManagerParameter fieldCfgLedBright("ledBrightnessConfigMode", HTTP_TEXT_IO_CFG_LED, ledCfgDimmingString, STRNLEN_INT(PWMRANGE));
+    WiFiManagerParameter textCfgResetSw(httpTextCfgResetSw);
+    sprintf(resetSwCfgString, "%d", ramMirrorPtr->io.resetSwitchEnabled);
+    WiFiManagerParameter fieldCfgResetSw("resetSwitchEnabled", HTTP_TEXT_IO_RESET_SW, resetSwCfgString, STRNLEN_INT(1));
 
     wifiManager.addParameter(&textHeadingIO);
     wifiManager.addParameter(&textTextRunLedBright);
     wifiManager.addParameter(&fieldRunLedBright);
     wifiManager.addParameter(&textCfgLedBright);
     wifiManager.addParameter(&fieldCfgLedBright);
+    wifiManager.addParameter(&textCfgResetSw);
+    wifiManager.addParameter(&fieldCfgResetSw);
 
     // Alarm configs
     WiFiManagerParameter textHeadingAlarm(httpTextHeadingAlarm);
@@ -408,6 +410,7 @@ void setupWifi() {
         // IO configs
         ramMirrorPtr->io.ledBrightnessConfigMode = (uint16_t) atoi(fieldCfgLedBright.getValue());
         ramMirrorPtr->io.ledBrightnessRunMode = (uint16_t) atoi(fieldRunLedBright.getValue());
+        ramMirrorPtr->io.resetSwitchEnabled = (uint8_t) atoi(fieldCfgResetSw.getValue());
         nvmUpdateRamMirrorCrcByName(nvmIOStruc);
 
         // Alarm configs
@@ -417,8 +420,12 @@ void setupWifi() {
         nvmComittRamMirror();
         
         // Debug message
-        debugMessage = (String() + "Configuraiton data saved.");
+        debugMessage = (String() + "Configuraiton data saved.  Rebooting in 5s...");
         debugLog(&debugMessage, info);
+
+        // Reboot so modules initialise from NVM (!!! could avoid reboot by doing a re-init here !!!)
+        delay(5000);
+        restCtrlImmediateHandle(rstTypeReset);
     }
 
     // If the auto connect failed, reset
@@ -426,8 +433,9 @@ void setupWifi() {
         debugMessage = (String() + "WiFi connection set-up failed! Rebooting in 5s...");
         debugLog(&debugMessage, error);
 
+        // Reboot
         delay(5000);
-        ESP.restart();
+        restCtrlImmediateHandle(rstTypeReset);
     }
 
     // Reaching this point means WiFi is sucessfully connected
@@ -457,20 +465,14 @@ void checkWifi() {
 }
 
 /**
-    WiFi reset.
+    Reset wifi settings.
 */
-void resetWifi() {
-    String debugMessage;
+void wifiReset() {
     WiFiManager wifiManager;
     
-    debugMessage = (String() + "WIFI resetting system to defaults! Rebooting in 5s...");
-    debugLog(&debugMessage, warning);
-
     wifiManager.resetSettings();
-
-    delay(5000);
-    ESP.restart();
 }
+
 
 /**
     Transmit a wifi message.
