@@ -15,6 +15,7 @@
 
 #include "reset_ctrl.h"
 #include "status_ctrl.h"
+#include "hawkbit_ctrl.h"
 
 // Local function definitions
 void periodicMessageTx(void);
@@ -40,14 +41,16 @@ Task taskInputsCyclic(INPUTS_CYCLIC_RATE, TASK_FOREVER, &inputsCyclicTask);
 Task taskOutputsCyclic(OUTPUTS_CYCLIC_RATE, TASK_FOREVER, &outputsCyclicTask);
 Task taskResetCtrl(RESET_CTRL_CYCLIC_RATE, TASK_FOREVER, &restCtrlStateMachine);
 Task taskStatusCtrl(STATUS_CTRL_CYCLIC_RATE, TASK_FOREVER, &statusCtrlStateMachine);
+Task taskHawkbitCtrl(HAWKBIT_CTRL_CYCLIC_RATE, TASK_FOREVER, &hawkbitCtrlStateMachine);
 Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 
 void testo() {
     //Serial1.println(inputsReadInputByName(resetSw));
     //if(inputsReadInput(resetSw)) {ESP.restart();}
+    //hawkbitClientCyclicTask();
 }
 
-Task switcher(100, TASK_FOREVER, &testo);
+Task switcher(30000, TASK_FOREVER, &testo);
 
 void setup(void) {
     // STEP 1 - Setup debug serial
@@ -63,6 +66,7 @@ void setup(void) {
     // STEP 3 - Set up the applications
     restCtrlInit();
     statusCtrlInit();
+    
 
     //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);
     //outputsSetOutput(wifiCfg, flash, 1000, 0, 1, 10);
@@ -82,6 +86,8 @@ void setup(void) {
     // Set-up mqtt
     mqttSetup();
 
+    hawkbitCtrlInit();
+    
     // Add scheduler tasks and enable
     scheduler.addTask(wifiStatus);        
     scheduler.addTask(mqttClientTask);
@@ -93,6 +99,7 @@ void setup(void) {
     scheduler.addTask(taskOutputsCyclic);
     scheduler.addTask(taskResetCtrl);
     scheduler.addTask(taskStatusCtrl);
+    scheduler.addTask(taskHawkbitCtrl);
     scheduler.addTask(taskPeriodicMessageTx);
 
     wifiStatus.enable();
@@ -105,6 +112,7 @@ void setup(void) {
     taskOutputsCyclic.enable();
     taskResetCtrl.enable();
     taskStatusCtrl.enable();
+    taskHawkbitCtrl.enable();
     taskPeriodicMessageTx.enable();
 
     scheduler.addTask(switcher);
