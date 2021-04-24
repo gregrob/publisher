@@ -22,8 +22,22 @@
 #define HAWKBIT_CTRL_JSON_DOCUMENT_SIZE (1024)
 
 
-// JSON static document
-static StaticJsonDocument<HAWKBIT_CTRL_JSON_DOCUMENT_SIZE> doc; 
+// HTTP REST API types
+enum hawkbitClientHttpRestTypes {
+    hawkbitClientHttpGET,
+    hawkbitClientHttpPOST,
+    hawkbitClientHttpPUT,
+
+    hawkbitClientHttpRestTypesTotal
+};
+
+
+// HTTP REST API type names
+static const char * hawkbitClientHttpRestTypeNames[] {
+    "hawkbitClientHttpGET",
+    "hawkbitClientHttpPOST",
+    "hawkbitClientHttpPUT"
+};
 
 // Hawkbit state machine state names
 static const char * hawkbitCtrlStateNames[] {
@@ -37,6 +51,9 @@ static const char * hawkbitCtrlStateNames[] {
     "stmHawkbitConfig"
 };
 
+// Module name for debug messages
+const char* hawkbitCtrlModuleName = "hawkbitCtrl";
+
 // Hawkbit tennant ID
 const char* hawkbitCtrlTennantID = "DEFAULT";
 
@@ -46,8 +63,9 @@ const char* hawkbitCtrlServerURL = "svr.max.lan:9090";
 // Hawkbit gateway security token
 const char* hawkbitCtrlGatewayToken = "2401a1f9f311a30de365b861a35bc620";
 
-// Module name for debug messages
-const char* hawkbitCtrlModuleName = "hawkbitCtrl";
+
+// JSON static document
+static StaticJsonDocument<HAWKBIT_CTRL_JSON_DOCUMENT_SIZE> doc; 
 
 // Current state
 static hawkbitCtrlStm hawkbitCtrlCurrentState;
@@ -58,138 +76,105 @@ String hawkbitCtrlControllerID;
 // Hawkbit base server API path
 String hawkbitCtrlServerPathBase;
 
-// Hawkbit authentication
-String hawkbitCtrlAuthentication;
 
-// Hawkbit Rx payload
-String hawkbitRxPayload;
+/**
+    Access a HTTP REST API.
+        
+    @param[in]     serverPath the full server / API path.
+    @param[in]     docPtr pointer to the JSON buffer.
+    @param[in]     apiType API type (GET/POST/PUT).
+    @return        bool as success / failure.
+*/
+static bool hawkbitClientHttp(const String serverPath, JsonDocument * const docPtr, const hawkbitClientHttpRestTypes apiType) {
 
-// Hawkbit Tx payload
-String hawkbitTxPayload;
-
-
-static int hawkbitCtrlGET(const String serverPath) {
-
+    // Debug message
     String debugMessage;
 
+    // Wifi and http client (wifi must be defined first)
     WiFiClient wifi;
     HTTPClient http;
+
+    // Payloads for Tx and Rx (raw HTTP message after JSON)
+    String txPayload;
+    String rxPayload;
     
-    int httpResponseCode;
-    
+    // Response codes for HTTP and JSON requests
+    int httpResponseCode = HTTP_CODE_OK;
+    DeserializationError jsonResponse = DeserializationError::Ok;
+
+    // Function return value
+    bool returnValue = false;
+
+    // Start the HTTP request and set the authentication
     http.begin(wifi, serverPath.c_str());
+    http.addHeader("Authorization", String() + "GatewayToken " + hawkbitCtrlGatewayToken);
 
-    http.addHeader("Authorization", hawkbitCtrlAuthentication);
-    http.addHeader("Accept", "application/hal+json");
+    // Make sure apiType is within ranage
+    if (apiType < hawkbitClientHttpRestTypesTotal) {
 
-    httpResponseCode = http.GET();
+        switch(apiType) {
 
-    debugMessage = String() + hawkbitCtrlModuleName + ": GET " + serverPath + ", returned " + httpResponseCode;
+            case hawkbitClientHttpGET:
+                http.addHeader("Accept", "application/hal+json");
+                httpResponseCode = http.GET();
+                
+                if (httpResponseCode == HTTP_CODE_OK) {
+                    rxPayload = http.getString();
 
-    if (httpResponseCode == HTTP_CODE_OK) {
-        debugLog(&debugMessage, info);
-        hawkbitRxPayload = http.getString();
-    }
+                    docPtr->clear();
+                    jsonResponse = deserializeJson(*docPtr, rxPayload);
+                }
+                break;
 
-    else {
-        debugLog(&debugMessage, error);
+            case hawkbitClientHttpPOST:
+                http.addHeader("Content-Type", "application/json;charset=UTF-8");
+                (void) serializeJson(*docPtr, txPayload);
+                httpResponseCode = http.POST(txPayload);
+                break;
+
+            case hawkbitClientHttpPUT:
+                http.addHeader("Content-Type", "application/json;charset=UTF-8");
+                (void) serializeJson(*docPtr, txPayload);
+                httpResponseCode = http.PUT(txPayload);
+                break;
+
+            // The range check should prevent these requests from ever being requested
+            case hawkbitClientHttpRestTypesTotal:
+            default:
+                break;
+        }
+
+        // Construct a debug string for the http operation
+        debugMessage = String() + hawkbitCtrlModuleName + ": " + hawkbitClientHttpRestTypeNames[apiType] + " " + serverPath + ", returned " + httpResponseCode;
+
+        // Positive HTTP response
+        if (httpResponseCode == HTTP_CODE_OK) {
+            debugLog(&debugMessage, info);
+
+            // JSON deserialisation problem
+            if(jsonResponse) {
+                debugMessage = String() + hawkbitCtrlModuleName + ": JSON deserialisation failed with code " + jsonResponse.f_str();
+                debugLog(&debugMessage, warning);
+
+                returnValue = false;
+            }
+
+            else {
+                returnValue = true;
+            }
+        }
+
+        else {
+            debugLog(&debugMessage, error);
+
+            returnValue = false;
+        }
     }
 
     http.end();
 
-    return(httpResponseCode);
+    return(returnValue);
 }
-
-static int hawkbitCtrlPOST(const String serverPath) {
-
-    String debugMessage;
-
-    WiFiClient wifi;
-    HTTPClient http;
-    
-    int httpResponseCode;
-    
-    http.begin(wifi, serverPath.c_str());
-
-    http.addHeader("Authorization", hawkbitCtrlAuthentication);
-    http.addHeader("Content-Type", "application/json;charset=UTF-8");
-    //http.addHeader("Accept", "application/hal+json");
-    
-    hawkbitTxPayload = "";
-    (void) serializeJson(doc, hawkbitTxPayload);
-
-    httpResponseCode = http.POST(hawkbitTxPayload);
-    
-    debugMessage = String() + hawkbitCtrlModuleName + ": POST " + serverPath + ", returned " + httpResponseCode;
-
-    if (httpResponseCode == HTTP_CODE_OK) {
-        debugLog(&debugMessage, info);
-        hawkbitRxPayload = http.getString();
-    }
-
-    else {
-        debugLog(&debugMessage, error);
-    }
-
-    http.end();
-
-    return(httpResponseCode);
-}
-
-
-static int hawkbitCtrlPUT(const String serverPath) {
-
-    String debugMessage;
-
-    WiFiClient wifi;
-    HTTPClient http;
-    
-    int httpResponseCode;
-    
-    http.begin(wifi, serverPath.c_str());
-
-    http.addHeader("Authorization", hawkbitCtrlAuthentication);
-    http.addHeader("Content-Type", "application/json;charset=UTF-8");
-    
-    hawkbitTxPayload = "";
-    (void) serializeJson(doc, hawkbitTxPayload);
-
-    httpResponseCode = http.PUT(hawkbitTxPayload);
-    
-    debugMessage = String() + hawkbitCtrlModuleName + ": PUT " + serverPath + ", returned " + httpResponseCode;
-
-    if (httpResponseCode == HTTP_CODE_OK) {
-        debugLog(&debugMessage, info);
-        hawkbitRxPayload = http.getString();
-    }
-
-    else {
-        debugLog(&debugMessage, error);
-    }
-
-    http.end();
-
-    return(httpResponseCode);
-}
-
-
-static DeserializationError hawkbitCtrlExtractJson(void) {
-    
-    String debugMessage;
-    DeserializationError error;
-
-    doc.clear();
-
-    error = deserializeJson(doc, hawkbitRxPayload);
-
-    if (error) {
-        debugMessage = String() + hawkbitCtrlModuleName + ": JSON deserialisation failed with code " + error.f_str();
-        debugLog(&debugMessage, warning);
-    }
-
-    return(error);
-}
-
 
 
 /**
@@ -206,7 +191,6 @@ void hawkbitCtrlInit(void) {
     hawkbitCtrlCurrentState = stmHawkbitRestart;
     hawkbitCtrlControllerID = String() + getWiFiModuleDetails()->moduleHostName;
     hawkbitCtrlServerPathBase = String() + "http://" + hawkbitCtrlServerURL + "/" + hawkbitCtrlTennantID + "/controller/v1/" + hawkbitCtrlControllerID;
-    hawkbitCtrlAuthentication = String() + "GatewayToken " + hawkbitCtrlGatewayToken;
     doc.clear();
 }
 
@@ -225,7 +209,7 @@ doc.clear();
             doc["status"]["execution"] = "closed";
             doc["status"]["result"]["finished"] = "success";
 
-            hawkbitCtrlPOST(hawkbitCtrlServerPathBase + "/deploymentBase/" + lastActionedID + "/feedback");
+            hawkbitClientHttp(hawkbitCtrlServerPathBase + "/deploymentBase/" + lastActionedID + "/feedback", &doc, hawkbitClientHttpPOST);
 }
 
 /**
@@ -280,13 +264,7 @@ void hawkbitCtrlStateMachine(void) {
         
 
         case(stmHawkbitPoll):
-            // GET HTTP encountered an error
-            if(hawkbitCtrlGET(hawkbitCtrlServerPathBase) != HTTP_CODE_OK) {
-                nextState = stmHawkbitRestart;
-            }
-
-            // Decoding the JSON encountered an error
-            else if (hawkbitCtrlExtractJson()) {
+            if(!hawkbitClientHttp(hawkbitCtrlServerPathBase, &doc, hawkbitClientHttpGET)) {
                 nextState = stmHawkbitRestart;
             }
 
@@ -319,14 +297,8 @@ void hawkbitCtrlStateMachine(void) {
             }          
             break;
 
-        case(stmHawkbitCancel):   
-            // GET HTTP encountered an error
-            if(hawkbitCtrlGET(hrefCancel) != HTTP_CODE_OK) {
-                nextState = stmHawkbitRestart;
-            }
-
-            // Decoding the JSON encountered an error
-            else if (hawkbitCtrlExtractJson()) {
+        case(stmHawkbitCancel):                                      
+            if(!hawkbitClientHttp(hrefCancel, &doc, hawkbitClientHttpGET)) {
                 nextState = stmHawkbitRestart;
             }
 
@@ -347,18 +319,12 @@ void hawkbitCtrlStateMachine(void) {
 
             // TODO: Put handling for returning failures here - if (lastActionedID.compareTo(currentID))
 
-            hawkbitCtrlPOST(hawkbitCtrlServerPathBase + "/cancelAction/" + currentID + "/feedback");
+            hawkbitClientHttp(hawkbitCtrlServerPathBase + "/cancelAction/" + currentID + "/feedback", &doc, hawkbitClientHttpPOST);
             nextState = stmHawkbitRestart;
             break;
 
         case(stmHawkbitDeploy):
-            // GET HTTP encountered an error
-            if(hawkbitCtrlGET(hrefDeployment) != HTTP_CODE_OK) {
-                nextState = stmHawkbitRestart;
-            }
-
-            // Decoding the JSON encountered an error
-            else if (hawkbitCtrlExtractJson()) {
+            if(!hawkbitClientHttp(hrefDeployment, &doc, hawkbitClientHttpGET)) {
                 nextState = stmHawkbitRestart;
             }
 
@@ -375,7 +341,7 @@ void hawkbitCtrlStateMachine(void) {
                 doc["status"]["execution"] = "proceeding";
                 doc["status"]["result"]["finished"] = "none";
 
-                hawkbitCtrlPOST(hawkbitCtrlServerPathBase + "/deploymentBase/" + lastActionedID + "/feedback");
+                hawkbitClientHttp(hawkbitCtrlServerPathBase + "/deploymentBase/" + lastActionedID + "/feedback", &doc, hawkbitClientHttpPOST);
                 
 
             //ESPhttpUpdate.update(wifi);
@@ -404,7 +370,7 @@ void hawkbitCtrlStateMachine(void) {
             doc["status"]["details"][0] = "its busted";
             doc["status"]["result"]["finished"] = "failure";
 
-            hawkbitCtrlPOST(hawkbitCtrlServerPathBase + "/deploymentBase/" + lastActionedID + "/feedback");
+            hawkbitClientHttp(hawkbitCtrlServerPathBase + "/deploymentBase/" + lastActionedID + "/feedback", &doc, hawkbitClientHttpPOST);
             nextState = stmHawkbitRestart;
             break;
 
@@ -423,7 +389,7 @@ void hawkbitCtrlStateMachine(void) {
             doc["status"]["execution"] = "closed";
             doc["status"]["result"]["finished"] = "success";
 
-            hawkbitCtrlPUT(hrefConfig);
+            hawkbitClientHttp(hrefConfig, &doc, hawkbitClientHttpPUT);
             nextState = stmHawkbitRestart;
             break;
 
