@@ -15,7 +15,7 @@
 
 #include "reset_ctrl.h"
 #include "status_ctrl.h"
-#include "hawkbit_ctrl.h"
+#include "hawkbit_client.h"
 
 // Local function definitions
 void periodicMessageTx(void);
@@ -41,7 +41,7 @@ Task taskInputsCyclic(INPUTS_CYCLIC_RATE, TASK_FOREVER, &inputsCyclicTask);
 Task taskOutputsCyclic(OUTPUTS_CYCLIC_RATE, TASK_FOREVER, &outputsCyclicTask);
 Task taskResetCtrl(RESET_CTRL_CYCLIC_RATE, TASK_FOREVER, &restCtrlStateMachine);
 Task taskStatusCtrl(STATUS_CTRL_CYCLIC_RATE, TASK_FOREVER, &statusCtrlStateMachine);
-Task taskHawkbitCtrl(HAWKBIT_CTRL_CYCLIC_RATE, TASK_FOREVER, &hawkbitCtrlStateMachine);
+Task taskHawkbitCtrl(HAWKBIT_CLIENT_CYCLIC_RATE, TASK_FOREVER, &hawkbitClientStateMachine);
 Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 
 void testo() {
@@ -86,7 +86,7 @@ void setup(void) {
     // Set-up mqtt
     mqttSetup();
 
-    hawkbitCtrlInit();
+    hawkbitClientInit();
     
     // Add scheduler tasks and enable
     scheduler.addTask(wifiStatus);        

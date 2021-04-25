@@ -1,12 +1,12 @@
-#ifndef HAWKBIT_CTRL_H
-#define HAWKBIT_CTRL_H
+#ifndef HAWKBIT_CLIENT_H
+#define HAWKBIT_CLIENT_H
 
 // Call rate for the cyclic taks (in mS)
-#define HAWKBIT_CTRL_CYCLIC_RATE           (100)
+#define HAWKBIT_CLIENT_CYCLIC_RATE           (100)
 
 
 // Hawkbit state machine
-enum hawkbitCtrlStm {
+enum hawkbitClientStm {
     stmHawkbitRestart,
     stmHawkbitIdle,
     stmHawkbitPoll,
@@ -21,18 +21,18 @@ enum hawkbitCtrlStm {
 /**
     Hawkbit controller init.
 */
-void hawkbitCtrlInit(void);
+void hawkbitClientInit(void);
 
 /**
     Hawkbit controller state machine.
 */
-void hawkbitCtrlStateMachine(void);
+void hawkbitClientStateMachine(void);
 
 /**
     Get the current state of the hawkbit state machine.
 
     @return        state machine state.
 */
-hawkbitCtrlStm hawkbitCtrlGetCurrentState(void);
+hawkbitClientStm hawkbitClientGetCurrentState(void);
 
 #endif
