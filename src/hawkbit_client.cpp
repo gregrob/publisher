@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "debug.h"
 #include "nvm_cfg.h"
+#include "reset_ctrl.h"
 #include "wifi.h"
 
 // Two step process as defined in - https://arduino-esp8266.readthedocs.io/en/latest/ota_updates/readme.html
@@ -54,7 +55,8 @@ static const char * hawkbitClientStateNames[] {
     "stmHawkbitCancel",
     "stmHawkbitCancelAck",
     "stmHawkbitDeploy",
-    "stmHawkbitDeployAckFail",
+    "stmHawkbitDeployAck",
+    "stmHawkbitDeploySuccessReboot",
     "stmHawkbitConfig"
 };
 
@@ -358,8 +360,8 @@ void hawkbitClientInit(void) {
 }
 
 
-
-
+// TODO: BIG TIDY UP IN HERE STM (including GLOBALS)
+// TODO: Interaction with standard OTA, each need to disable each other (i.e. if OTA is running then return rejection here, if this is running reject OTA)
 /**
     Hawkbit controller state machine.
 */
@@ -370,15 +372,15 @@ void hawkbitClientStateMachine(void) {
 
     // State timer
     static uint32_t stateTimer;
-    
-    // Last state
-    static hawkbitClientStm lastState = stmHawkbitRestart;
 
     // Next state
     hawkbitClientStm nextState = hawkbitClientCurrentState;
 
     // Action ID
     static String actionID;
+
+    // Result from the update
+    static String updateResult;
 
     // Strings for hrefs
     static String hrefCancel;
@@ -475,32 +477,43 @@ void hawkbitClientStateMachine(void) {
             else {
                 actionID = doc["id"] | "";                
 
-                hawkbitClientUpdateHandler(doc["deployment"]["chunks"][0]["artifacts"][0]["_links"]["download-http"]["href"] | "", actionID, &doc);
+                updateResult = hawkbitClientUpdateHandler(doc["deployment"]["chunks"][0]["artifacts"][0]["_links"]["download-http"]["href"] | "", actionID, &doc);
                 
-                nextState = stmHawkbitDeployAckFail;
+                nextState = stmHawkbitDeployAck;
             }
             break;
-
-        // Failed deployment (unit would reset before it got here)
-        // TODO: rename
-        case(stmHawkbitDeployAckFail):
+            
+        case(stmHawkbitDeployAck):
             // Prepare the JSON acknowledgement
             doc.clear();
             doc["id"] = actionID;
             doc["status"]["execution"] = "closed";
             
-            // switch if programming was a sucess
-            doc["status"]["result"]["finished"] = "failure";
-            
-            //doc["status"]["result"]["finished"] = "success";
+            // Success
+            if(updateResult.isEmpty()) {
+                doc["status"]["result"]["finished"] = "success";
+                nextState = stmHawkbitDeploySuccessReboot;
+            }
+
+            // Failed (no reboot)
+            else {
+                doc["status"]["details"][0] = updateResult;
+                doc["status"]["result"]["finished"] = "failure";
+                nextState = stmHawkbitRestart;
+            }
 
             hawkbitClientHttp(hawkbitClientServerPathBase + "/deploymentBase/" + actionID + "/feedback", &doc, hawkbitClientHttpPOST);
-
-            nextState = stmHawkbitRestart;
             break;
 
+        case(stmHawkbitDeploySuccessReboot):
+            restCtrlImmediateHandle(rstTypeReset);
+            nextState = stmHawkbitRestart;
+            break;
+        
         // Configuration requested
         case(stmHawkbitConfig):
+            // TODO: Real data here
+            
             doc.clear();
 
             doc["mode"] = "replace";
@@ -531,7 +544,6 @@ void hawkbitClientStateMachine(void) {
     }
     
     // Update last states and current states (in this order)
-    lastState = hawkbitClientCurrentState;
     hawkbitClientCurrentState = nextState;
 }
 

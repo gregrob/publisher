@@ -13,7 +13,8 @@ enum hawkbitClientStm {
     stmHawkbitCancel,
     stmHawkbitCancelAck,
     stmHawkbitDeploy,
-    stmHawkbitDeployAckFail,
+    stmHawkbitDeployAck,
+    stmHawkbitDeploySuccessReboot,
     stmHawkbitConfig
 };
 
