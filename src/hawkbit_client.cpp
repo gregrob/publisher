@@ -23,7 +23,7 @@
 
 // TODO: Fix this poll rate, way too fast
 // Time to stay in idle state in S
-#define HAWKBIT_CLIENT_IDLE_TIME_RST_S      (1)
+#define HAWKBIT_CLIENT_IDLE_TIME_RST_S      (30)
 
 // Size of the JSON document
 #define HAWKBIT_CLIENT_JSON_DOCUMENT_SIZE   (1024)
