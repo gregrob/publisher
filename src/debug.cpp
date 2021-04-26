@@ -89,7 +89,7 @@ static void debugLogHeader(logLevel level) {
     
     String header;
 
-    char currentTime[STRNLEN_INT(MAX_VALUE_32BIT_UNSIGNED) + 1];
+    char currentTime[STRNLEN_INT(MAX_VALUE_32BIT_UNSIGNED_DEC) + 1];
 
     // Format the current time string (keep it 10 digits so it is consistent)
     snprintf(currentTime, sizeof(currentTime), "%10lu", millis());

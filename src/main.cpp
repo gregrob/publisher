@@ -62,6 +62,7 @@ void setup(void) {
     nvmInit();
     inputsInit();
     outputsInit();
+    versionInit();
 
     // STEP 3 - Set up the applications
     restCtrlInit();

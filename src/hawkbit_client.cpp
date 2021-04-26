@@ -11,6 +11,8 @@
 #include "nvm_cfg.h"
 #include "reset_ctrl.h"
 #include "wifi.h"
+#include "version.h"
+
 
 // Two step process as defined in - https://arduino-esp8266.readthedocs.io/en/latest/ota_updates/readme.html
 // Stops bricking upon crash / power outage during update
@@ -78,9 +80,6 @@ static StaticJsonDocument<HAWKBIT_CLIENT_JSON_DOCUMENT_SIZE> doc;
 
 // Current state
 static hawkbitClientStm hawkbitClientCurrentState;
-
-// Hawkbit controller identification
-String hawkbitClientControllerID;
 
 // Hawkbit base server API path
 String hawkbitClientServerPathBase;
@@ -154,16 +153,16 @@ static bool hawkbitClientHttp(const String serverPath, JsonDocument * const docP
         }
 
         // Construct a debug string for the http operation
-        debugMessage = String() + hawkbitClientModuleName + ": " + hawkbitClientHttpRestTypeNames[apiType] + " " + serverPath + ", returned " + httpResponseCode;
+        debugMessage = String() + hawkbitClientHttpRestTypeNames[apiType] + " " + serverPath + ", returned " + httpResponseCode;
 
         // Positive HTTP response
         if (httpResponseCode == HTTP_CODE_OK) {
-            debugLog(&debugMessage, info);
+            debugLog(&debugMessage, hawkbitClientModuleName, info);
 
             // JSON deserialisation problem
             if (jsonResponse) {
-                debugMessage = String() + hawkbitClientModuleName + ": JSON deserialisation failed with code " + jsonResponse.f_str();
-                debugLog(&debugMessage, warning);
+                debugMessage = String() + "JSON deserialisation failed with code " + jsonResponse.f_str();
+                debugLog(&debugMessage, hawkbitClientModuleName, warning);
 
                 returnValue = false;
             }
@@ -174,7 +173,7 @@ static bool hawkbitClientHttp(const String serverPath, JsonDocument * const docP
         }
 
         else {
-            debugLog(&debugMessage, error);
+            debugLog(&debugMessage, hawkbitClientModuleName, error);
 
             returnValue = false;
         }
@@ -195,11 +194,11 @@ static bool hawkbitClientHttp(const String serverPath, JsonDocument * const docP
     @param[in]     newActionID the action ID being processed (leave "" if called from callback).
     @param[in]     newDocPtr pointer to the JSON doc (leave NULL if called from the callback).
 */
-void hawkbitClientUpdateProgress(unsigned int progress, unsigned int total, const String newActionID, JsonDocument * const newDocPtr) {
+static void hawkbitClientUpdateProgress(unsigned int progress, unsigned int total, const String newActionID, JsonDocument * const newDocPtr) {
             
     // Debug strings
     String debugMessage;
-    char percentageCompleteString[STRNLEN_INT(100%) + 1];    
+    char percentageCompleteString[STRNLEN_INT(MAX_PERCENTAGE_STRING) + 1];    
     
     // Store the action ID (only gets updated while something is passed)
     static String actionID;
@@ -234,10 +233,11 @@ void hawkbitClientUpdateProgress(unsigned int progress, unsigned int total, cons
 
     // Threshold to send progress response met
     if (percentageComplete >= percentageCompleteThresholdSend) {
-        sprintf(percentageCompleteString, "%u%%", percentageComplete);
+        
+        snprintf(percentageCompleteString, sizeof(percentageCompleteString), "%u%%", percentageComplete);
 
-        debugMessage = String() + hawkbitClientModuleName + ": Updating software " + percentageCompleteString + ".";
-        debugLog(&debugMessage, info);
+        debugMessage = String() + "Updating software " + percentageCompleteString;
+        debugLog(&debugMessage, hawkbitClientModuleName, info);
 
         // Prepare the JSON response and send
         docPtr->clear();
@@ -305,6 +305,9 @@ static String hawkbitClientUpdateHandler(const String updateImagePath, const Str
     // TODO: How to set basic security in download - New versions of arudino lib have void ESP8266HTTPUpdate::setAuthorization(const String &auth)???
     // TODO: Secure update
     // TODO: MD5 hash check
+    // TODO: Consider FreeRTOS to better handle the blocking nature of the re-programming
+    // TODO: Consider how to handle IO / OS / MQQT while this is blocking
+    // TODO: Consider what could happen if second programming request comes via OTA (perhaps OTS should check if this has already processed a programming reqest - is in the Deployment states)
 
     // Do the update
     updateStatus = ESPhttpUpdate.update(wifi, updateImagePath);
@@ -312,11 +315,11 @@ static String hawkbitClientUpdateHandler(const String updateImagePath, const Str
     // Set-up the return message / error info
     switch (updateStatus) {
       case HTTP_UPDATE_FAILED:        
-        returnValue = String() + "HTTP_UPDATE_FAILD Error " + ESPhttpUpdate.getLastError() + " (" + ESPhttpUpdate.getLastErrorString().c_str() + ").";
+        returnValue = String() + "HTTP_UPDATE_FAILD Error " + ESPhttpUpdate.getLastError() + " (" + ESPhttpUpdate.getLastErrorString().c_str() + ")";
         break;
 
       case HTTP_UPDATE_NO_UPDATES:
-        returnValue = String() + "HTTP_UPDATE_NO_UPDATES.";
+        returnValue = String() + "HTTP_UPDATE_NO_UPDATES";
         break;
 
       case HTTP_UPDATE_OK:
@@ -326,17 +329,58 @@ static String hawkbitClientUpdateHandler(const String updateImagePath, const Str
 
     // If the return value is empty, success
     if (returnValue.isEmpty()) {
-        debugMessage = String() + hawkbitClientModuleName + ": Update completed successfully.";
-        debugLog(&debugMessage, info);
+        debugMessage = String() + "Update completed successfully";
+        debugLog(&debugMessage, hawkbitClientModuleName, info);
+        
     }
 
     // Otherwise error
     else {
-        debugMessage = String() + hawkbitClientModuleName + ": Update failed: " + returnValue;
-        debugLog(&debugMessage, error);
+        debugMessage = String() + "Update failed: " + returnValue;
+        debugLog(&debugMessage, hawkbitClientModuleName, error);
     }
 
     return(returnValue);
+}
+
+
+/**
+    Construct and transmit HTTP PUT for configuration data.
+        
+    @param[in]     serverPath pointer to the full server path for the PUT.
+    @param[in]     docPtr pointer to the JSON doc.
+*/
+void hawkbitClientConfigResponse(const String * const serverPath, JsonDocument * const docPtr) {
+    
+    // Version data
+    const versionData * versionDataPtr;
+    const uint32_t versionDataSize = versionGetData(&versionDataPtr);
+    
+    // Wifi data
+    wifiModuleDetail * wifiModuleDetailsPtr = getWiFiModuleDetails();
+
+    // Prepare the JSON response
+    docPtr->clear();
+
+    (*docPtr)["mode"] = "replace";
+    (*docPtr)["status"]["execution"] = "closed";
+    (*docPtr)["status"]["result"]["finished"] = "success";
+
+    (*docPtr)["data"]["device"] = "publisher";
+    (*docPtr)["data"]["stm"] = hawkbitClientModuleName;
+    (*docPtr)["data"]["mac"] = wifiModuleDetailsPtr->moduleMAC;
+    (*docPtr)["data"]["host"] = wifiModuleDetailsPtr->moduleHostName;
+
+    // TODO: Add a parameter for the microcontroller type
+    // TODO: Add a parameter for HW revision
+
+    // Handle all version info
+    for(unsigned int i = 0; i < versionDataSize; i++) {
+        (*docPtr)["data"][versionDataPtr[i].versionName] = versionDataPtr[i].versionContents;
+    }
+
+    // Send the response
+    hawkbitClientHttp(*serverPath, docPtr, hawkbitClientHttpPUT);
 }
 
 
@@ -351,17 +395,14 @@ void hawkbitClientInit(void) {
     // Set-up pointer to RAM mirror
     (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
 
-    // TODO: Acessing globals here needs to be fixed?
-    // TODO: Setup hawkbit server parameters from NVM
+    // TODO: How should local globals be accessed within this function?
+    // TODO: Read hawkbit configuration parameters from NVM
     hawkbitClientCurrentState = stmHawkbitRestart;
-    hawkbitClientControllerID = String() + getWiFiModuleDetails()->moduleHostName;
-    hawkbitClientServerPathBase = String() + "http://" + hawkbitClientServerURL + "/" + hawkbitClientTennantID + "/controller/v1/" + hawkbitClientControllerID;
+    hawkbitClientServerPathBase = String() + "http://" + hawkbitClientServerURL + "/" + hawkbitClientTennantID + "/controller/v1/" + getWiFiModuleDetails()->moduleHostName;
     doc.clear();
 }
 
 
-// TODO: BIG TIDY UP IN HERE STM (including GLOBALS)
-// TODO: Interaction with standard OTA, each need to disable each other (i.e. if OTA is running then return rejection here, if this is running reject OTA)
 /**
     Hawkbit controller state machine.
 */
@@ -387,14 +428,18 @@ void hawkbitClientStateMachine(void) {
     static String hrefConfig;
     static String hrefDeployment;
 
+    // TODO: How should local globals be accessed within this function?
+
     // Handle the state machine
     switch(hawkbitClientCurrentState) {
         
+        // Start here when the statemachine is reset
         case(stmHawkbitRestart):
             stateTimer = SECS_TO_CALLS(HAWKBIT_CLIENT_IDLE_TIME_RST_S);
             nextState = stmHawkbitIdle;
             break;
         
+        // Wait here for a period of time before polling
         case(stmHawkbitIdle):
             // Timer running
             if(stateTimer > 0) {
@@ -407,8 +452,9 @@ void hawkbitClientStateMachine(void) {
             }
             break;
         
-
+        // Poll hawkbit server for pending requests
         case(stmHawkbitPoll):
+            // Try to send the GET and if there is a failure restart
             if(!hawkbitClientHttp(hawkbitClientServerPathBase, &doc, hawkbitClientHttpGET)) {
                 nextState = stmHawkbitRestart;
             }
@@ -442,6 +488,7 @@ void hawkbitClientStateMachine(void) {
             }          
             break;
 
+        // Get details of a cancellation request
         case(stmHawkbitCancel):                                      
             // Try to send the GET and if there is a failure restart
             if(!hawkbitClientHttp(hrefCancel, &doc, hawkbitClientHttpGET)) {
@@ -455,6 +502,7 @@ void hawkbitClientStateMachine(void) {
             }
             break;
 
+        // Acknowledge cancellation
         case(stmHawkbitCancelAck):            
             // Prepare the JSON acknowledgement
             doc.clear();
@@ -467,6 +515,7 @@ void hawkbitClientStateMachine(void) {
             nextState = stmHawkbitRestart;
             break;
 
+        // Get details of deployment and attempt programming
         case(stmHawkbitDeploy):
             // Try to send the GET and if there is a failure restart
             if(!hawkbitClientHttp(hrefDeployment, &doc, hawkbitClientHttpGET)) {
@@ -476,13 +525,12 @@ void hawkbitClientStateMachine(void) {
             // If there is no failure, record the action ID, re-program, and move to acknowledgement
             else {
                 actionID = doc["id"] | "";                
-
-                updateResult = hawkbitClientUpdateHandler(doc["deployment"]["chunks"][0]["artifacts"][0]["_links"]["download-http"]["href"] | "", actionID, &doc);
-                
+                updateResult = hawkbitClientUpdateHandler(doc["deployment"]["chunks"][0]["artifacts"][0]["_links"]["download-http"]["href"] | "", actionID, &doc);                
                 nextState = stmHawkbitDeployAck;
             }
             break;
             
+        // Acknowledge sucessfull or unsucessfull deployment attempt
         case(stmHawkbitDeployAck):
             // Prepare the JSON acknowledgement
             doc.clear();
@@ -505,6 +553,7 @@ void hawkbitClientStateMachine(void) {
             hawkbitClientHttp(hawkbitClientServerPathBase + "/deploymentBase/" + actionID + "/feedback", &doc, hawkbitClientHttpPOST);
             break;
 
+        // Programming success so reboot
         case(stmHawkbitDeploySuccessReboot):
             restCtrlImmediateHandle(rstTypeReset);
             nextState = stmHawkbitRestart;
@@ -512,22 +561,7 @@ void hawkbitClientStateMachine(void) {
         
         // Configuration requested
         case(stmHawkbitConfig):
-            // TODO: Real data here
-            
-            doc.clear();
-
-            doc["mode"] = "replace";
-
-            doc["data"]["device"] = "ESP8266 D1 Mini";
-            doc["data"]["hw revision"] = "1";
-            doc["data"]["sw version"] = "1.0.0";
-            doc["data"]["serial"] = "J123456789"; 
-            doc["data"]["stm"] = "hawkbit_client";
-           
-            doc["status"]["execution"] = "closed";
-            doc["status"]["result"]["finished"] = "success";
-
-            hawkbitClientHttp(hrefConfig, &doc, hawkbitClientHttpPUT);
+            hawkbitClientConfigResponse(&hrefConfig, &doc);
             nextState = stmHawkbitRestart;
             break;
 
@@ -539,8 +573,8 @@ void hawkbitClientStateMachine(void) {
  
     // State change
     if (hawkbitClientCurrentState != nextState) {
-        debugMessage = String() + hawkbitClientModuleName + ": State change to " + hawkbitClientStateNames[nextState];
-        debugLog(&debugMessage, info);
+        debugMessage = String() + "State change to " + hawkbitClientStateNames[nextState];
+        debugLog(&debugMessage, hawkbitClientModuleName, info);
     }
     
     // Update last states and current states (in this order)
