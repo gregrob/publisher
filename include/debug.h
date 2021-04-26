@@ -49,5 +49,6 @@ void debugPrintln(String* const rawData, textColour rawDataColour);
 
 // Prints to the log
 void debugLog(String* const message, logLevel level);
+void debugLog(String* const message, const char * const module, logLevel level);
 
 #endif

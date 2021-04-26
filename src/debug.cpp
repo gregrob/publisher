@@ -2,6 +2,8 @@
 
 #include "debug.h"
 
+#include "utils.h"
+
 // esc code table
 static const escCode textColourEscCodes[] = {{"\u001b[0m",  "reset"},
                                              {"\u001b[30m", "black"},
@@ -79,34 +81,71 @@ void debugPrintln(String* const rawData, textColour rawDataColour) {
 }
 
 /**
+    Prints to the debug log header
+
+    @param[in]     level log level formatting to use for the header.
+*/
+static void debugLogHeader(logLevel level) {
+    
+    String header;
+
+    char currentTime[STRNLEN_INT(MAX_VALUE_32BIT_UNSIGNED) + 1];
+
+    // Format the current time string (keep it 10 digits so it is consistent)
+    snprintf(currentTime, sizeof(currentTime), "%10lu", millis());
+
+    // Print the header
+    switch(level) {
+        case error:
+            header = String() + "[E" + currentTime + "ms] ";
+            debugPrint(&header, brred);
+            break;
+
+        case warning:
+            header = String() + "[W" + currentTime + "ms] ";
+            debugPrint(&header, bryellow); 
+            break;
+
+        case info:
+        default:
+            header = String() + "[I" + currentTime + "ms] ";
+            debugPrint(&header, brgreen); 
+            break;
+    }
+}
+
+/**
     Prints to the log.
 
     @param[in]     message pointer to the message to be printed.
     @param[in]     level log level formatting to use for the header.
 */
 void debugLog(String* const message, logLevel level) {    
-    // Basic construct for the header
-    String header =  (" - " + (String)millis() + "ms] ");
     
     // Print the header
-    switch(level) {
-        case error:
-            header = "[error" + header;
-            debugPrint(&header, brred);
-            break;
-
-        case warning:
-            header = "[warning" + header;
-            debugPrint(&header, bryellow); 
-            break;
-
-        case info:
-        default:
-            header = "[info" + header;
-            debugPrint(&header, brgreen); 
-            break;
-    }
+    debugLogHeader(level);
 
     // Print the remainder of the message
     debugPrintln(message, reset);        
+}
+
+/**
+    Prints to the log.
+
+    @param[in]     message pointer to the message to be printed.
+    @param[in]     module module printing to the log.
+    @param[in]     level log level formatting to use for the header.
+*/
+void debugLog(String* const message, const char * const module, logLevel level) {
+
+    String header;
+
+    // Print the header
+    debugLogHeader(level);
+    
+    header = String() + module + ": ";
+    debugPrint(&header, brwhite); 
+
+    // Print the remainder of the message
+    debugPrintln(message, reset);
 }
