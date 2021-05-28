@@ -525,7 +525,6 @@ void hawkbitClientStateMachine(void) {
             // If there is no failure, record the action ID, re-program, and move to acknowledgement
             else {
                 actionID = doc["id"] | "";                
-                Serial1.println(doc["deployment"]["chunks"][0]["artifacts"][0]["_links"]["download-http"]["href"] | "");
                 updateResult = hawkbitClientUpdateHandler(doc["deployment"]["chunks"][0]["artifacts"][0]["_links"]["download-http"]["href"] | "", actionID, &doc);                
                 nextState = stmHawkbitDeployAck;
             }
@@ -556,7 +555,7 @@ void hawkbitClientStateMachine(void) {
 
         // Programming success so wait for reboot, no further re-programming till reboot
         case(stmHawkbitWaitReboot):
-            //restCtrlImmediateHandle(rstTypeReset);
+            // Reboot handled from reset controller
             break;
         
         // Configuration requested

@@ -45,14 +45,14 @@ Task taskHawkbitCtrl(HAWKBIT_CLIENT_CYCLIC_RATE, TASK_FOREVER, &hawkbitClientSta
 Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 
 void testo() {
-    static bool pino = true;
+    //static bool pino = true;
     //Serial1.println(inputsReadInputByName(resetSw));
     //if(inputsReadInput(resetSw)) {ESP.restart();}
     //hawkbitClientCyclicTask();
-    analogWrite(RX, 1024);
-    digitalWrite(RX, pino);
-    if(pino) pino = false;
-    else pino = true;
+    //analogWrite(RX, 1024);
+    //digitalWrite(RX, pino);
+    //if(pino) pino = false;
+    //else pino = true;
 }
 
 Task switcher(1000, TASK_FOREVER, &testo);
