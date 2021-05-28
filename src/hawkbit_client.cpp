@@ -58,7 +58,7 @@ static const char * hawkbitClientStateNames[] {
     "stmHawkbitCancelAck",
     "stmHawkbitDeploy",
     "stmHawkbitDeployAck",
-    "stmHawkbitDeploySuccessReboot",
+    "stmHawkbitWaitReboot",
     "stmHawkbitConfig"
 };
 
@@ -525,6 +525,7 @@ void hawkbitClientStateMachine(void) {
             // If there is no failure, record the action ID, re-program, and move to acknowledgement
             else {
                 actionID = doc["id"] | "";                
+                Serial1.println(doc["deployment"]["chunks"][0]["artifacts"][0]["_links"]["download-http"]["href"] | "");
                 updateResult = hawkbitClientUpdateHandler(doc["deployment"]["chunks"][0]["artifacts"][0]["_links"]["download-http"]["href"] | "", actionID, &doc);                
                 nextState = stmHawkbitDeployAck;
             }
@@ -540,7 +541,7 @@ void hawkbitClientStateMachine(void) {
             // Success
             if(updateResult.isEmpty()) {
                 doc["status"]["result"]["finished"] = "success";
-                nextState = stmHawkbitDeploySuccessReboot;
+                nextState = stmHawkbitWaitReboot;
             }
 
             // Failed (no reboot)
@@ -553,10 +554,9 @@ void hawkbitClientStateMachine(void) {
             hawkbitClientHttp(hawkbitClientServerPathBase + "/deploymentBase/" + actionID + "/feedback", &doc, hawkbitClientHttpPOST);
             break;
 
-        // Programming success so reboot
-        case(stmHawkbitDeploySuccessReboot):
-            restCtrlImmediateHandle(rstTypeReset);
-            nextState = stmHawkbitRestart;
+        // Programming success so wait for reboot, no further re-programming till reboot
+        case(stmHawkbitWaitReboot):
+            //restCtrlImmediateHandle(rstTypeReset);
             break;
         
         // Configuration requested

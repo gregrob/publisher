@@ -14,7 +14,7 @@ enum hawkbitClientStm {
     stmHawkbitCancelAck,
     stmHawkbitDeploy,
     stmHawkbitDeployAck,
-    stmHawkbitDeploySuccessReboot,
+    stmHawkbitWaitReboot,
     stmHawkbitConfig
 };
 
