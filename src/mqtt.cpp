@@ -27,6 +27,11 @@ static void mqttMessageFullTopic(const char * const shortTopic, String * const l
 // MQTT settings
 const char* mqtt_alarm_command = "alarm command";
 const char* mqtt_module_command = "module command";
+const char* mqttLwtMessage = "module status";
+
+// LWT values
+const char* mqttLwtValueOnline = "online";
+const char* mqttLwtValueOffline = "offline";
 
 // MQTT client connection
 WiFiClient espClient;
@@ -122,6 +127,9 @@ static void mqttReconnect(void) {
     // Debug message
     String debugMessage;
 
+    // Full topic string
+    String fullTopicLwt;
+
     // Pointer to the RAM mirror
     const nvmCompleteStructure * ramMirrorPtr;
 
@@ -131,16 +139,24 @@ static void mqttReconnect(void) {
     // Create a client ID based on the mac address
     String clientId = (String() + getWiFiModuleDetails()->moduleHostName);
 
+    // Create the full message topic with prefix and hostname for LWT
+    mqttMessageFullTopic(mqttLwtMessage, &fullTopicLwt);
+    
     // Attempt to connect
     debugMessage = (String() + "MQTT attempting connection from " + clientId.c_str() + " to " + ramMirrorPtr->mqtt.mqttServer  + ":" + MQTT_PORT);
     debugLog(&debugMessage, info);
 
-    if (client.connect(clientId.c_str(), ramMirrorPtr->mqtt.mqttUser, ramMirrorPtr->mqtt.mqttPassword)) {
+    if (client.connect(clientId.c_str(), ramMirrorPtr->mqtt.mqttUser, ramMirrorPtr->mqtt.mqttPassword, fullTopicLwt.c_str(), 0, true, mqttLwtValueOffline)) {
         debugMessage = (String() + "MQTT connected to " + ramMirrorPtr->mqtt.mqttServer + ":" + MQTT_PORT);
         debugLog(&debugMessage, info);
         
         mqttMessageSubscribe(mqtt_module_command);
-        mqttMessageSubscribe(mqtt_alarm_command);     
+        mqttMessageSubscribe(mqtt_alarm_command);
+
+        // Transmit the LWT message
+        client.publish(fullTopicLwt.c_str(), mqttLwtValueOnline, true);
+        debugMessage = (String() + "MQTT TX LWT message [" + fullTopicLwt + "]: " + mqttLwtValueOnline);
+        debugLog(&debugMessage, info);    
     } 
     else {
         debugMessage = (String() + "MQTT connection to " + ramMirrorPtr->mqtt.mqttServer + ":" + MQTT_PORT + " failed (rc=" + client.state() + "), will retry later");
