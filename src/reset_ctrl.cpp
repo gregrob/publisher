@@ -7,6 +7,7 @@
 #include "inputs_cfg.h"
 #include "nvm_cfg.h"
 #include "wifi.h"
+#include "hawkbit_client.h"
 
 
 // Set the module call interval
@@ -24,6 +25,9 @@
 // Slow duration to hold reset switch to cancel clear and reset request
 #define RESET_CTRL_CLR_CANCEL_SLO_S (5)
 
+
+// Module name for debug messages
+const char* resetControllerModuleName = "resetCtrl";
 
 // Reset state machine state names (must align with the enum)
 static const char * resetCtrlStateNames[] = {
@@ -70,19 +74,19 @@ void restCtrlImmediateHandle(resetCtrlTypes requestedReset) {
 
         case(rstTypeReset):
             debugMessage = debugMessage + "...";
-            debugLog(&debugMessage, warning);
+            debugLog(&debugMessage, resetControllerModuleName, warning);
             break;
         
         case(rstTypeResetWiFi):
             debugMessage = debugMessage + " + clearing WiFi settings...";
-            debugLog(&debugMessage, warning);
+            debugLog(&debugMessage, resetControllerModuleName, warning);
 
             wifiReset();
             break;
 
         case(rstTypeResetWiFiNvm):
             debugMessage = debugMessage + " + clearing WiFi + NVM settings...";
-            debugLog(&debugMessage, warning);
+            debugLog(&debugMessage, resetControllerModuleName, warning);
 
             nvmClear();
             wifiReset();
@@ -147,13 +151,19 @@ void restCtrlStateMachine(void) {
         
         case(stmResetIdle):
             
-            // PRIO 1 - Check if a reset request arrives during idle
-            if (resetCtrlRequestedResetType != rstTypeNone) {
+            // PRIO 1 - OTA needs a reboot (no option to cancel this)
+            if(hawkbitClientGetCurrentState() == stmHawkbitWaitReboot) {
+                nextState = stmResetAction;
+                resetCtrlRequestedResetType = rstTypeReset;
+            }
+
+            // PRIO 2 - Check if a reset request arrives during idle
+            else if (resetCtrlRequestedResetType != rstTypeNone) {
                 nextState = stmResetAllowCancel;
                 switchHeldTimer = SECS_TO_CALLS(RESET_CTRL_CLR_CANCEL_SLO_S);
             }
 
-            // PRIO 2 - Switch transitions to HIGH
+            // PRIO 3 - Switch transitions to HIGH
             else if ((resetSwLastState == LOW) && (resetSwCurrentState == HIGH)) {
                 nextState = stmReset;
                 resetCtrlRequestedResetType = rstTypeReset;
@@ -229,8 +239,8 @@ void restCtrlStateMachine(void) {
 
             // First transition to this state
             if(resetCtrlCurrentState != lastState) {
-                debugMessage = String() + "resetCtrl reset will occurr in " + CALLS_TO_SECS(switchHeldTimer) + "s.";
-                debugLog(&debugMessage, warning);
+                debugMessage = String() + "Reset will occurr in " + CALLS_TO_SECS(switchHeldTimer) + "s";
+                debugLog(&debugMessage, resetControllerModuleName, warning);
             }
             
             // Switch released
@@ -272,8 +282,8 @@ void restCtrlStateMachine(void) {
  
     // State change
     if (resetCtrlCurrentState != nextState) {
-        debugMessage = String() + "resetCtrl changed to state to " + resetCtrlStateNames[nextState] + " (reqest type " + resetCtrlTypesNames[resetCtrlRequestedResetType] + ").";
-        debugLog(&debugMessage, info);
+        debugMessage = String() + "State change to " + resetCtrlStateNames[nextState] + " (reqest type " + resetCtrlTypesNames[resetCtrlRequestedResetType] + ")";
+        debugLog(&debugMessage, resetControllerModuleName, info);
     }
     
     // Update last states and current states (in this order)
