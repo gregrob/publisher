@@ -3,6 +3,7 @@
 #include "alarm.h"
 #include "credentials.h"
 #include "debug.h"
+#include "nvm_cfg.h"
 #include "messages_tx.h"
 #include "outputs_cfg.h"
 
@@ -32,6 +33,12 @@
 
 // Preamble for a trigger message definition
 #define ALARM_TRIGGER_MSG_PREAMBLE  ("Open ")
+
+// Panel common text for armed
+#define ALARM_PANEL_TEXT_CMN_ARM    (" ON")
+
+// Panel common text for disarmed
+#define ALARM_PANEL_TEXT_CMN_DISARM (" OFF")
 
 // Name for the state
 #define ALARM_NAME_STATE            ("state")
@@ -74,10 +81,16 @@ static alarmZoneInput alarmHomeStatus[] = {{"garage",         "Garage",         
 // Size of the versionDataSoftware structure
 static const unsigned int alarmHomeStatusSize = (sizeof(alarmHomeStatus) / sizeof(alarmHomeStatus[0]));
 
+// Panel armed message buffered from NVM
+static char alarmPanelStateMsgArmed[NVM_MAX_LENGTH_ADDRESS + sizeof(ALARM_PANEL_TEXT_CMN_ARM)];
+
+// Panel disarmed message buffered from NVM
+static char alarmPanelStateMsgDisarmed[NVM_MAX_LENGTH_ADDRESS + sizeof(ALARM_PANEL_TEXT_CMN_DISARM)];
+
 // Structure for all alarm state definitions
 static alarmStateMsgDefinitions alarmHomeStates[] = {{ALARM_DISARMED, "\x0c" "DISARMED " "\x1b\x1b\x13\x01\x1b\x1b"},
-                                                     {ALARM_DISARMED, ALARM_HOME_ADDRESS " OFF"},
-                                                     {ALARM_ARMED,    ALARM_HOME_ADDRESS " ON"},
+                                                     {ALARM_DISARMED, alarmPanelStateMsgDisarmed},
+                                                     {ALARM_ARMED,    alarmPanelStateMsgArmed},
                                                      {ALARM_ARMED,    "\x04\x17\x6E\x1E\x01\x1B\x1B\x13\x02\x1B\x1B\x12\x01\x1B\x1B\x09\x02\x1B\x1B\x0C\x01\x1B\x1B\x0B\x01\x1B\x1B\x0F\x01\x1B\x1B\x10\x01\x1B\x1C\x11"}
 };
 
@@ -95,7 +108,20 @@ static HardwareSerial *alarmSerial;
     @return        pointer to the serial port used for the alarm.
 */
 HardwareSerial* const alarmSetup(HardwareSerial* const serialPort) {
-    
+    // Pointer to the RAM mirror
+    const nvmCompleteStructure * ramMirrorPtr;
+
+    // Set-up pointer to RAM mirror
+    (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
+
+    // Buffer panel armed message from NVM (and append constant part of the string)
+    strncpy(alarmPanelStateMsgArmed, ramMirrorPtr->alarm.homeAddress, sizeof(ramMirrorPtr->alarm.homeAddress));
+    strncat(alarmPanelStateMsgArmed, ALARM_PANEL_TEXT_CMN_ARM, sizeof(ALARM_PANEL_TEXT_CMN_ARM));
+
+    // Buffer panel disarmed message from NVM (and append constant part of the string)
+    strncpy(alarmPanelStateMsgDisarmed, ramMirrorPtr->alarm.homeAddress, sizeof(ramMirrorPtr->alarm.homeAddress));
+    strncat(alarmPanelStateMsgDisarmed, ALARM_PANEL_TEXT_CMN_DISARM, sizeof(ALARM_PANEL_TEXT_CMN_DISARM));
+
     // Set-up serial interface to the alarm
     alarmSerial = serialPort;
     alarmSerial->begin(ALARM_SERIAL_BAUD);
