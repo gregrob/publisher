@@ -6,6 +6,7 @@
 #include "nvm_cfg.h"
 #include "messages_tx.h"
 #include "outputs_cfg.h"
+#include "inputs_cfg.h"
 
 // Alarm Panel Settings
 // 1. Area > Properties > Arm/Disarm Speaker Beeps Via RF Keyfob
@@ -43,6 +44,9 @@
 // Name for the state
 #define ALARM_NAME_STATE            ("state")
 
+// Name for the sounding
+#define ALARM_NAME_SOUNDING         ("sounding")
+
 // Name for the message counter
 #define ALARM_NAME_MESSAGES         ("messages")
 
@@ -52,11 +56,15 @@
 // Current state of the alarm (assume disarm on reset)
 static char alarmCurrentState[ALARM_STATE_STR_SIZE] = ALARM_DISARMED;
 
+// Alarm sounding status
+static bool alarmSounding = false;
+
 // Total number of alarm messages read from the panel
 static unsigned long alarmRxMsgTotal = 0;
 
 // Alarm status data
 static const alarmStatusData alarmStatusDataTable = {ALARM_NAME_STATE,      alarmCurrentState,
+                                                     ALARM_NAME_SOUNDING,   &alarmSounding,
                                                      ALARM_NAME_MESSAGES,   &alarmRxMsgTotal
 };  
 
@@ -307,7 +315,7 @@ void alarmBackgroundLoop(void) {
     Debounces alarm triggers.
     Called from the scheduler to provide debounce time base.
 */
-void alarmTriggerDebounce(void) {
+static void alarmTriggerDebounce(void) {
     // Zone transition to inactive detected
     bool triggerTransitionInactive = false;
 
@@ -335,6 +343,39 @@ void alarmTriggerDebounce(void) {
     }
 }
 
+/**
+    Check and update sounding state.
+*/
+static void alarmSoundingCheck(void) {   
+    bool alarmSoundingNextState;
+
+    // Convert pin state to bool
+    if(inputsReadInputByName(alarmSounder) == LOW) {
+        alarmSoundingNextState = false;
+    }
+    
+    else {
+        alarmSoundingNextState = true;
+    }
+
+    // State change of sounder so send out mqtt
+    if(alarmSoundingNextState != alarmSounding) {
+        alarmSounding = alarmSoundingNextState;
+        alarmTransmitAlarmStatusMessage();
+    }
+}
+
+/**
+    Cycle task for the alarm.
+*/
+void alarmCyclicTask(void) {
+    
+    // Debounce alarm triggers
+    alarmTriggerDebounce();
+
+    // Check if the alarm is sounding
+    alarmSoundingCheck();    
+}
 
 /**
     Transmit a alarm status message.

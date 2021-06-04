@@ -35,13 +35,12 @@ Task wifiStatus(30000, TASK_FOREVER, &checkWifi);
 Task mqttClientTask(100, TASK_FOREVER, &mqttClientLoop);
 Task mqttMessageTask(10000, TASK_FOREVER, &mqttMessageLoop);
 
-Task alarmTriggerDebounceTask(100, TASK_FOREVER, &alarmTriggerDebounce);
-
 Task taskInputsCyclic(INPUTS_CYCLIC_RATE, TASK_FOREVER, &inputsCyclicTask);
 Task taskOutputsCyclic(OUTPUTS_CYCLIC_RATE, TASK_FOREVER, &outputsCyclicTask);
 Task taskResetCtrl(RESET_CTRL_CYCLIC_RATE, TASK_FOREVER, &restCtrlStateMachine);
 Task taskStatusCtrl(STATUS_CTRL_CYCLIC_RATE, TASK_FOREVER, &statusCtrlStateMachine);
 Task taskHawkbitCtrl(HAWKBIT_CLIENT_CYCLIC_RATE, TASK_FOREVER, &hawkbitClientStateMachine);
+Task taskAlarmCyclic(ALARM_CYCLIC_RATE, TASK_FOREVER, &alarmCyclicTask);
 Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 
 void testo() {
@@ -98,21 +97,18 @@ void setup(void) {
     scheduler.addTask(wifiStatus);        
     scheduler.addTask(mqttClientTask);
     scheduler.addTask(mqttMessageTask);
-
-    scheduler.addTask(alarmTriggerDebounceTask);
-    
+   
     scheduler.addTask(taskInputsCyclic);
     scheduler.addTask(taskOutputsCyclic);
     scheduler.addTask(taskResetCtrl);
     scheduler.addTask(taskStatusCtrl);
     scheduler.addTask(taskHawkbitCtrl);
     scheduler.addTask(taskPeriodicMessageTx);
+    scheduler.addTask(taskAlarmCyclic);
 
     wifiStatus.enable();
     mqttClientTask.enable();
     mqttMessageTask.enable();
-    
-    alarmTriggerDebounceTask.enable();
 
     taskInputsCyclic.enable();
     taskOutputsCyclic.enable();
@@ -120,6 +116,7 @@ void setup(void) {
     taskStatusCtrl.enable();
     taskHawkbitCtrl.enable();
     taskPeriodicMessageTx.enable();
+    taskAlarmCyclic.enable();
 
     scheduler.addTask(switcher);
     switcher.enable();

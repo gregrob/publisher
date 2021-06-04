@@ -1,10 +1,16 @@
 #ifndef ALARM_H
 #define ALARM_H
 
+// Call rate for the cyclic taks
+#define ALARM_CYCLIC_RATE (100)
+
+
 // Structure for alarm status data
 typedef struct {
     const char*           alarmStateName;
     const char*           alarmStatePtr;
+    const char*           alarmSoundingName;
+    const bool*           alarmSoundingPtr;
     const char*           alarmMessageCounterName;
     const unsigned long*  alarmMessageCounterPtr;
 } alarmStatusData;
@@ -44,10 +50,9 @@ void alarmFireOneShot(void);
 void alarmBackgroundLoop(void);
 
 /**
-    Debounces alarm triggers.
-    Called from the scheduler to provide debounce time base.
+    Cycle task for the alarm.
 */
-void alarmTriggerDebounce(void);
+void alarmCyclicTask(void);
 
 /**
     Transmit a alarm status message.

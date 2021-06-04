@@ -127,6 +127,7 @@ void messsagesTxAlarmStatusMessage(const alarmStatusData * const alarmStatusData
    
     // Populate the date (manually because of mixed types)
     doc[alarmStatusDataStructurePtr->alarmStateName] = alarmStatusDataStructurePtr->alarmStatePtr;
+    doc[alarmStatusDataStructurePtr->alarmSoundingName] = *alarmStatusDataStructurePtr->alarmSoundingPtr;
     doc[alarmStatusDataStructurePtr->alarmMessageCounterName] = *alarmStatusDataStructurePtr->alarmMessageCounterPtr;
 
     // Searilise the JSON string
