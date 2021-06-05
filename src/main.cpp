@@ -69,18 +69,16 @@ void setup(void) {
     versionInit();
 
     // STEP 3 - Set up the applications
+    hawkbitClientInit();
     restCtrlInit();
     statusCtrlInit();
-    
 
-    //outputsSetOutput(wifiRun, flash, 0, 1000, 10, 1);
-    //outputsSetOutput(wifiCfg, flash, 1000, 0, 1, 10);
-
-
-    // Set up the alarm interface
-    alarmSerialPort = alarmSetup(&Serial);
-    //Put the serial pins on D7 = Rx and D8 = Tx.
-    alarmSerialPort->swap();
+    if (getWiFiModuleDetails()->moduleHostType == alarmModule) {
+        // Set up the alarm interface
+        alarmSerialPort = alarmInit(&Serial);
+        // Put the serial pins on D7 = Rx and D8 = Tx.
+        alarmSerialPort->swap();
+    }
     
     // Set-up wifi
     setupWifi();
@@ -91,8 +89,7 @@ void setup(void) {
     // Set-up mqtt
     mqttSetup();
 
-    hawkbitClientInit();
-    
+        
     // Add scheduler tasks and enable
     scheduler.addTask(wifiStatus);        
     scheduler.addTask(mqttClientTask);
@@ -116,7 +113,10 @@ void setup(void) {
     taskStatusCtrl.enable();
     taskHawkbitCtrl.enable();
     taskPeriodicMessageTx.enable();
-    taskAlarmCyclic.enable();
+    
+    if (getWiFiModuleDetails()->moduleHostType == alarmModule) {
+        taskAlarmCyclic.enable();
+    }
 
     scheduler.addTask(switcher);
     switcher.enable();
@@ -134,7 +134,11 @@ void loop(void) {
 
     // Handle tasks
     otaLoop();
-    alarmBackgroundLoop();
+    
+    if (getWiFiModuleDetails()->moduleHostType == alarmModule) {
+        alarmBackgroundLoop();
+    }
+
     scheduler.execute();
 }
 

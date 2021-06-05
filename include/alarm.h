@@ -19,8 +19,10 @@ typedef struct {
 typedef struct {
   const char*   zoneName;
   const char*   openStatusMsg;
-  unsigned int  lastTriggered;
-  bool          triggered;
+  unsigned int  lastPirTriggered;
+  bool          pirTriggered;
+  unsigned int  lastAlarmTriggered;
+  bool          alarmTriggered;
 } alarmZoneInput;
 
 // Structure for storing alarm state
@@ -30,13 +32,13 @@ typedef struct {
 } alarmStateMsgDefinitions;
 
 /**
-    Alarm module setup.
+    Alarm module init.
     Sets up the serial bus.
 
     @param[in]     serialPort pointer to the serial port to be used for the alarm.
     @return        pointer to the serial port used for the alarm.
 */
-HardwareSerial* const alarmSetup(HardwareSerial* const serialPort);
+HardwareSerial* const alarmInit(HardwareSerial* const serialPort);
 
 /**
     Fire the one shot on the alarm arm / disarm output.
@@ -61,10 +63,16 @@ void alarmCyclicTask(void);
 void alarmTransmitAlarmStatusMessage(void);
 
 /**
-    Transmit a alarm triggers message.
+    Transmit a alarm PIR message.
+    No processing of the message here.
+*/
+void alarmTransmitAlarmPirMessage(void);
+
+/**
+    Transmit a alarm source message.
     No processing of the message here.
 */ 
-void alarmTransmitAlarmTriggersMessage(void);
+void alarmTransmitAlarmSourceMessage(void);
 
 /**
     Transmit a ALL alarm messages.

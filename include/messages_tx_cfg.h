@@ -16,7 +16,10 @@
 // MQTT topic definition for alarm triggers
 #define MESSAGES_TX_MQTT_TOPIC_ALARM_STATUS     ("alarm status")
 
-// MQTT topic definition for alarm triggers
-#define MESSAGES_TX_MQTT_TOPIC_ALARM_TRIGGERS   ("alarm triggers")
+// MQTT topic definition for alarm PIR
+#define MESSAGES_TX_MQTT_TOPIC_ALARM_PIR        ("alarm pir")
+
+// MQTT topic definition for alarm source
+#define MESSAGES_TX_MQTT_TOPIC_ALARM_SOURCE     ("alarm source")
 
 #endif

@@ -8,6 +8,6 @@
 #define VERSION_CONTENTS_MINOR  "006"
 
 // Contents for bugfix version
-#define VERSION_CONTENTS_BUGFIX "001"
+#define VERSION_CONTENTS_BUGFIX "002"
 
 #endif

@@ -32,8 +32,11 @@
 // Size of alarm state string
 #define ALARM_STATE_STR_SIZE        (10)
 
-// Preamble for a trigger message definition
-#define ALARM_TRIGGER_MSG_PREAMBLE  ("Open ")
+// Preamble for a PIR message definition
+#define ALARM_PIR_MSG_PREAMBLE      ("Open ")
+
+// Preamble for a alarm source message definition
+#define ALARM_SOURCE_MSG_PREAMBLE   ("ALARM ")
 
 // Panel common text for armed
 #define ALARM_PANEL_TEXT_CMN_ARM    (" ON")
@@ -68,22 +71,25 @@ static const alarmStatusData alarmStatusDataTable = {ALARM_NAME_STATE,      alar
                                                      ALARM_NAME_MESSAGES,   &alarmRxMsgTotal
 };  
 
-// Preamble for a trigger message
-static const char* triggerMessagePreamble = ALARM_TRIGGER_MSG_PREAMBLE;
+// Preamble for a PIR message
+static const char* pirMessagePreamble = ALARM_PIR_MSG_PREAMBLE;
 
-// Structure for all alarm sources in the home 
-static alarmZoneInput alarmHomeStatus[] = {{"garage",         "Garage",         ALARM_MAX_LAST_SEEN, false},
-                                           {"foyer",          "Foyer",          ALARM_MAX_LAST_SEEN, false},
-                                           {"office",         "Study",          ALARM_MAX_LAST_SEEN, false},
-                                           {"laundry",        "Laundry",        ALARM_MAX_LAST_SEEN, false},
-                                           {"family",         "Family",         ALARM_MAX_LAST_SEEN, false},
-                                           {"store",          "Store",          ALARM_MAX_LAST_SEEN, false},
-                                           {"landing",        "Landing",        ALARM_MAX_LAST_SEEN, false},
-                                           {"theatre",        "Theatre",        ALARM_MAX_LAST_SEEN, false},
-                                           {"guest bedroom",  "Guest Bedroom",  ALARM_MAX_LAST_SEEN, false},
-                                           {"finns room",     "Kids Room",      ALARM_MAX_LAST_SEEN, false},
-                                           {"master bedroom", "Master Bedroom", ALARM_MAX_LAST_SEEN, false},
-                                           {"walk in robe",   "Walk In Robe",   ALARM_MAX_LAST_SEEN, false}
+// Preamble for a alarm source message
+static const char* sourceMessagePreamble = ALARM_SOURCE_MSG_PREAMBLE;
+
+// Structure for all PIR alarm sources in the home 
+static alarmZoneInput alarmHomeStatus[] = {{"garage",         "Garage",         ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"foyer",          "Foyer",          ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"office",         "Study",          ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"laundry",        "Laundry",        ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"family",         "Family",         ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"store",          "Store",          ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"landing",        "Landing",        ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"theatre",        "Theatre",        ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"guest bedroom",  "Guest Bedroom",  ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"finns room",     "Kids Room",      ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"master bedroom", "Master Bedroom", ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false},
+                                           {"walk in robe",   "Walk In Robe",   ALARM_MAX_LAST_SEEN, false, ALARM_MAX_LAST_SEEN, false}
 };
 
 // Size of the versionDataSoftware structure
@@ -109,13 +115,13 @@ static char alarmMsgBuffer[ALARM_MSG_BUFFER];
 static HardwareSerial *alarmSerial;
 
 /**
-    Alarm module setup.
+    Alarm module init.
     Sets up the serial bus.
 
     @param[in]     serialPort pointer to the serial port to be used for the alarm.
     @return        pointer to the serial port used for the alarm.
 */
-HardwareSerial* const alarmSetup(HardwareSerial* const serialPort) {
+HardwareSerial* const alarmInit(HardwareSerial* const serialPort) {
     // Pointer to the RAM mirror
     const nvmCompleteStructure * ramMirrorPtr;
 
@@ -199,8 +205,11 @@ void alarmFireOneShot(void) {
     @param[in]     rawMessage pointer to the raw alarm message.
 */
 static void alarmUpdateHome(char* const rawMessage) {
-    // Zone transition to active detected
-    bool triggerTransitionActive = false;
+    // PIR transition to active detected
+    bool pirTransitionActive = false;
+
+    // Source transition to active detected
+    bool sourceTransitionActive = false;
 
     // Alarm state update detected
     bool alarmStateUpdate = false;
@@ -209,22 +218,42 @@ static void alarmUpdateHome(char* const rawMessage) {
         alarmDetailedMessageDebug(rawMessage);
     #endif
 
-    // Check if message contains a trigger preamble
-    if (strncmp(rawMessage, triggerMessagePreamble, (sizeof(triggerMessagePreamble)/sizeof(char))) == 0) {
+    // Check if message contains a PIR preamble
+    if (strncmp(rawMessage, pirMessagePreamble, strlen(pirMessagePreamble)) == 0) {
 
         // Check what elements in the home structure need updating
         for (unsigned int i = 0; i < (sizeof(alarmHomeStatus)/sizeof(alarmHomeStatus[0])); i++) {
 
             // Zone match found (only compare text after preamble to speed compare up)
-            if (strcmp(rawMessage + (sizeof(triggerMessagePreamble)/sizeof(char)) + 1, alarmHomeStatus[i].openStatusMsg) == 0) {
+            if (strcmp(rawMessage + strlen(pirMessagePreamble), alarmHomeStatus[i].openStatusMsg) == 0) {
                 
                 // First transition to true                
-                if (alarmHomeStatus[i].triggered == false) {
-                    triggerTransitionActive = true;
+                if (alarmHomeStatus[i].pirTriggered == false) {
+                    pirTransitionActive = true;
                 }
 
-                alarmHomeStatus[i].lastTriggered = 0;
-                alarmHomeStatus[i].triggered = true;
+                alarmHomeStatus[i].lastPirTriggered = 0;
+                alarmHomeStatus[i].pirTriggered = true;
+            }
+        }
+    }
+
+    // Check if message contains an alarm source preamble
+    else if (strncmp(rawMessage, sourceMessagePreamble, strlen(sourceMessagePreamble)) == 0) {
+
+        // Check what elements in the home structure need updating
+        for (unsigned int i = 0; i < (sizeof(alarmHomeStatus)/sizeof(alarmHomeStatus[0])); i++) {
+  
+            // Zone match found (only compare text after preamble to speed compare up)
+            if (strcmp(rawMessage + strlen(sourceMessagePreamble), alarmHomeStatus[i].openStatusMsg) == 0) {
+                
+                // First transition to true                
+                if (alarmHomeStatus[i].alarmTriggered == false) {
+                    sourceTransitionActive = true;
+                }
+
+                alarmHomeStatus[i].lastAlarmTriggered = 0;
+                alarmHomeStatus[i].alarmTriggered = true;
             }
         }
     }
@@ -253,9 +282,14 @@ static void alarmUpdateHome(char* const rawMessage) {
         alarmTransmitAlarmStatusMessage();
     }
 
-    // Alarm triggers update so send mqqt message
-    else if (triggerTransitionActive == true) {
-        alarmTransmitAlarmTriggersMessage();
+    // Alarm PIR update so send mqqt message
+    else if (pirTransitionActive == true) {
+        alarmTransmitAlarmPirMessage();
+    }
+
+    // Alarm source update so send mqqt message
+    else if (sourceTransitionActive == true) {
+        alarmTransmitAlarmSourceMessage();
     }
 }
 
@@ -312,34 +346,66 @@ void alarmBackgroundLoop(void) {
 }
 
 /**
-    Debounces alarm triggers.
+    Debounces alarm PIRs.
     Called from the scheduler to provide debounce time base.
 */
-static void alarmTriggerDebounce(void) {
-    // Zone transition to inactive detected
-    bool triggerTransitionInactive = false;
+static void alarmPirDebounce(void) {
+    // PIR transition to inactive
+    bool transitionInactive = false;
 
     // Update alarm schedule loop
     for (unsigned int i = 0; i < (sizeof(alarmHomeStatus)/sizeof(alarmHomeStatus[0])); i++) {
 
         // Only update last seen value if it is less than the max
-        if (alarmHomeStatus[i].lastTriggered < ALARM_MAX_LAST_SEEN) {
-            alarmHomeStatus[i].lastTriggered++;
+        if (alarmHomeStatus[i].lastPirTriggered < ALARM_MAX_LAST_SEEN) {
+            alarmHomeStatus[i].lastPirTriggered++;
         }
 
         else {
             // First transition to false                
-            if (alarmHomeStatus[i].triggered == true) {
-                triggerTransitionInactive = true;
+            if (alarmHomeStatus[i].pirTriggered == true) {
+                transitionInactive = true;
             }
             
-            alarmHomeStatus[i].triggered = false;                        
+            alarmHomeStatus[i].pirTriggered = false;                        
         }
     }
 
-    // A trigger was reset so send out a mqqt message
-    if (triggerTransitionInactive == true) {
-        alarmTransmitAlarmTriggersMessage();
+    // A PIR was reset so send out a mqqt message
+    if (transitionInactive == true) {
+        alarmTransmitAlarmPirMessage();
+    }
+}
+
+/**
+    Debounces alarm source.
+    Called from the scheduler to provide debounce time base.
+*/
+static void alarmSourceDebounce(void) {
+    // Source transition to inactive
+    bool transitionInactive = false;
+
+    // Update alarm schedule loop
+    for (unsigned int i = 0; i < (sizeof(alarmHomeStatus)/sizeof(alarmHomeStatus[0])); i++) {
+
+        // Only update last seen value if it is less than the max
+        if (alarmHomeStatus[i].lastAlarmTriggered < ALARM_MAX_LAST_SEEN) {
+            alarmHomeStatus[i].lastAlarmTriggered++;
+        }
+
+        else {
+            // First transition to false                
+            if (alarmHomeStatus[i].alarmTriggered == true) {
+                transitionInactive = true;
+            }
+            
+            alarmHomeStatus[i].alarmTriggered = false;                        
+        }
+    }
+
+    // A alarm source was reset so send out a mqqt message
+    if (transitionInactive == true) {
+        alarmTransmitAlarmSourceMessage();
     }
 }
 
@@ -370,8 +436,11 @@ static void alarmSoundingCheck(void) {
 */
 void alarmCyclicTask(void) {
     
-    // Debounce alarm triggers
-    alarmTriggerDebounce();
+    // Debounce alarm PIRs
+    alarmPirDebounce();
+
+    // Debounce alarm source
+    alarmSourceDebounce();
 
     // Check if the alarm is sounding
     alarmSoundingCheck();    
@@ -387,13 +456,20 @@ void alarmTransmitAlarmStatusMessage(void) {
 
 
 /**
-    Transmit a alarm triggers message.
+    Transmit a alarm PIR message.
     No processing of the message here.
 */ 
-void alarmTransmitAlarmTriggersMessage(void) {
-    messsagesTxAlarmTriggersMessage(alarmHomeStatus, &alarmHomeStatusSize);
+void alarmTransmitAlarmPirMessage(void) {
+    messsagesTxAlarmPirMessage(alarmHomeStatus, &alarmHomeStatusSize);
 }
 
+/**
+    Transmit a alarm source message.
+    No processing of the message here.
+*/ 
+void alarmTransmitAlarmSourceMessage(void) {
+    messsagesTxAlarmSourceMessage(alarmHomeStatus, &alarmHomeStatusSize);
+}
 
 /**
     Transmit a ALL alarm messages.
@@ -401,5 +477,6 @@ void alarmTransmitAlarmTriggersMessage(void) {
 */ 
 void alarmTransmitAlarmAllMessage(void) {
     alarmTransmitAlarmStatusMessage();
-    alarmTransmitAlarmTriggersMessage();
+    alarmTransmitAlarmPirMessage();
+    alarmTransmitAlarmSourceMessage();
 }
