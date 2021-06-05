@@ -254,6 +254,16 @@ static const char* wifiStatusToString(wl_status_t status) {
 }
 
 /**
+    Identify the module based on the MAC.
+    This informaiton is used by many modules to set variant specific configuration during init.
+    Should be called early / first during init.
+*/
+void wifiIdentifyModule(void) {
+    bufferMacString();
+    findCurrentModule();
+}
+
+/**
     WiFi set-up and connect.
 */
 void setupWifi(void) {
@@ -281,9 +291,6 @@ void setupWifi(void) {
     // String storage for reset switch config (text entry field)
     char resetSwCfgString[STRNLEN_INT(1) + 1];
     
-    bufferMacString();
-    findCurrentModule();
-
     // Explicitly set mode, esp defaults to STA+AP
     WiFi.mode(WIFI_STA);
     WiFi.hostname(publisherModules[activeModule].moduleHostName);

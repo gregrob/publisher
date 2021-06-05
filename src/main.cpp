@@ -57,6 +57,10 @@ void testo() {
 Task switcher(1000, TASK_FOREVER, &testo);
 
 void setup(void) {
+    
+    // STEP 0 - Identify variant
+    wifiIdentifyModule();
+
     // STEP 1 - Setup debug serial
     debugSerialPort = debugSetSerial(&Serial1);
     debugSerialPort->begin(115200);

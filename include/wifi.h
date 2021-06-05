@@ -38,6 +38,13 @@ typedef struct {
 wifiModuleDetail* const getWiFiModuleDetails(void);
 
 /**
+    Identify the module based on the MAC.
+    This informaiton is used by many modules to set variant specific configuration during init.
+    Should be called early / first during init.
+*/
+void wifiIdentifyModule(void);
+
+/**
     WiFi set-up and connect.
 */
 void setupWifi(void);
