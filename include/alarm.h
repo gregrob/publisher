@@ -15,14 +15,19 @@ typedef struct {
     const unsigned long*  alarmMessageCounterPtr;
 } alarmStatusData;
 
+// Structure for storing an individual trigger
+// Triggers can be a PIR or an Alarm Source
+typedef struct {
+  unsigned int  triggeredTimer;
+  bool          triggered;
+} triggerStatus;
+
 // Structure for storing zone details
 typedef struct {
   const char*   zoneName;
-  const char*   openStatusMsg;
-  unsigned int  lastPirTriggered;
-  bool          pirTriggered;
-  unsigned int  lastAlarmTriggered;
-  bool          alarmTriggered;
+  const char*   panelZoneName;
+  triggerStatus pirState;
+  triggerStatus alarmSource;
 } alarmZoneInput;
 
 // Structure for storing alarm state

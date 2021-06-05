@@ -154,7 +154,7 @@ void messsagesTxAlarmPirMessage(const alarmZoneInput * const alarmPirDataStructu
 
     // Append all of the version data to the JSON object
     for (unsigned int i = 0; i < *alarmPirStructureSize; i++) {
-        doc[(alarmPirDataStructurePtr + i)->zoneName] = (alarmPirDataStructurePtr + i)->pirTriggered;
+        doc[(alarmPirDataStructurePtr + i)->zoneName] = (alarmPirDataStructurePtr + i)->pirState.triggered;
     }
     
     // Searilise the JSON string
@@ -178,7 +178,7 @@ void messsagesTxAlarmSourceMessage(const alarmZoneInput * const alarmSourceDataS
 
     // Append all of the version data to the JSON object
     for (unsigned int i = 0; i < *alarmSourceStructureSize; i++) {
-        doc[(alarmSourceDataStructurePtr + i)->zoneName] = (alarmSourceDataStructurePtr + i)->alarmTriggered;
+        doc[(alarmSourceDataStructurePtr + i)->zoneName] = (alarmSourceDataStructurePtr + i)->alarmSource.triggered;
     }
     
     // Searilise the JSON string
