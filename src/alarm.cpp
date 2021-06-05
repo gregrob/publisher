@@ -446,13 +446,12 @@ void alarmTransmitAlarmStatusMessage(void) {
     messsagesTxAlarmStatusMessage(&alarmStatusDataTable);
 }
 
-
 /**
     Transmit a alarm PIR message.
     No processing of the message here.
 */ 
 void alarmTransmitAlarmPirMessage(void) {
-    messsagesTxAlarmPirMessage(alarmHomeStatus, &alarmHomeStatusSize);
+    messsagesTxAlarmTriggerMessage(alarmHomeStatus, &alarmHomeStatusSize, &alarmHomeStatusElementSize, alarmTriggerPir);
 }
 
 /**
@@ -460,7 +459,7 @@ void alarmTransmitAlarmPirMessage(void) {
     No processing of the message here.
 */ 
 void alarmTransmitAlarmSourceMessage(void) {
-    messsagesTxAlarmSourceMessage(alarmHomeStatus, &alarmHomeStatusSize);
+    messsagesTxAlarmTriggerMessage(alarmHomeStatus, &alarmHomeStatusSize, &alarmHomeStatusElementSize, alarmTriggerSource);
 }
 
 /**

@@ -141,51 +141,66 @@ void messsagesTxAlarmStatusMessage(const alarmStatusData * const alarmStatusData
 }
 
 /**
-    Transmit a alarm PIR message. 
+    Transmit a alarm trigger message.
     Convert the message structure into JSON format here.
 
-    @param[in]     alarmPirDataStructurePtr pointer to the alarm PIR data structure
-    @param[in]     alarmPirStructureSize size of the alarm PIR data structure
+    @param[in]     alarmDataStructurePtr pointer to the alarm data structure
+    @param[in]     alarmStructureSize size of the alarm data structure
+    @param[in]     alarmStructureElementSize size of an element in the alarm data structure
+    @param[in]     triggerType type of trigger message to be transmitted
 */
-void messsagesTxAlarmPirMessage(const alarmZoneInput * const alarmPirDataStructurePtr, const unsigned int * const alarmPirStructureSize) {
+void messsagesTxAlarmTriggerMessage(const alarmZoneInput * const alarmDataStructurePtr, const unsigned int * const alarmStructureSize, const unsigned int * const alarmStructureElementSize, const alarmTriggerTypes triggerType) {
     
-    // Clear the JSON object
-    doc.clear();
+    // Valid trigger type
+    bool validTriggerType = false;
+    
+    // Pointer to the current trigger to process
+    const triggerStatus * trigger;
 
-    // Append all of the version data to the JSON object
-    for (unsigned int i = 0; i < *alarmPirStructureSize; i++) {
-        doc[(alarmPirDataStructurePtr + i)->zoneName] = (alarmPirDataStructurePtr + i)->pirState.triggered;
+    // Pointer to the topic
+    const char * topic;
+
+    // Check what type of message needs to be sent
+    switch(triggerType) {
+
+        // Setup PIR trigger
+        case(alarmTriggerPir):
+            validTriggerType = true;
+            topic = messageMqttTopicAlarmPir;
+            trigger = &alarmDataStructurePtr[0].pirState;
+            break;
+
+        // Setup source trigger
+        case(alarmTriggerSource):
+            validTriggerType = true;
+            topic = messageMqttTopicAlarmSource;
+            trigger = &alarmDataStructurePtr[0].alarmSource;
+            break;
+
+        default:
+            break;
     }
-    
-    // Searilise the JSON string
-    serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
-    
-    // Transmit the message
-    mqttMessageSendRaw(messageMqttTopicAlarmPir, messageToSend);
-}
 
-/**
-    Transmit a alarm source message. 
-    Convert the message structure into JSON format here.
+    // If there was a valid trigger type
+    if(validTriggerType == true) {
 
-    @param[in]     alarmSourceDataStructurePtr pointer to the alarm source data structure
-    @param[in]     alarmSourceStructureSize size of the alarm source data structure
-*/
-void messsagesTxAlarmSourceMessage(const alarmZoneInput * const alarmSourceDataStructurePtr, const unsigned int * const alarmSourceStructureSize) {
+        // Clear the JSON object
+        doc.clear();
+ 
+        // Append all of the version data to the JSON object
+        for (unsigned int i = 0; i < *alarmStructureSize; i++) {
+            doc[(alarmDataStructurePtr + i)->zoneName] = trigger->triggered;
+
+            // Increment pointer to next trigger
+            trigger = (triggerStatus*) ((uint8_t *) trigger + *alarmStructureElementSize);
+        }
     
-    // Clear the JSON object
-    doc.clear();
-
-    // Append all of the version data to the JSON object
-    for (unsigned int i = 0; i < *alarmSourceStructureSize; i++) {
-        doc[(alarmSourceDataStructurePtr + i)->zoneName] = (alarmSourceDataStructurePtr + i)->alarmSource.triggered;
+        // Searilise the JSON string
+        serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
+    
+        // Transmit the message
+        mqttMessageSendRaw(topic, messageToSend);
     }
-    
-    // Searilise the JSON string
-    serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
-    
-    // Transmit the message
-    mqttMessageSendRaw(messageMqttTopicAlarmSource, messageToSend);
 }
 
 /**

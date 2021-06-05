@@ -5,6 +5,14 @@
 #define ALARM_CYCLIC_RATE (100)
 
 
+// Alarm trigger types
+typedef enum {
+    alarmTriggerPir      = 0,
+    alarmTriggerSource   = 1,
+
+    alarmTriggerNumberOfTypes
+} alarmTriggerTypes;
+
 // Structure for alarm status data
 typedef struct {
     const char*           alarmStateName;

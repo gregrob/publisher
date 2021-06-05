@@ -42,22 +42,15 @@ void messsagesTxWifiMessage(const wifiData * const wifiDataStructurePtr);
 void messsagesTxAlarmStatusMessage(const alarmStatusData * const alarmStatusDataStructurePtr);
 
 /**
-    Transmit a alarm PIR message. 
+    Transmit a alarm trigger message.
     Convert the message structure into JSON format here.
 
-    @param[in]     alarmPirDataStructurePtr pointer to the alarm PIR data structure
-    @param[in]     alarmPirStructureSize size of the alarm PIR data structure
+    @param[in]     alarmDataStructurePtr pointer to the alarm data structure
+    @param[in]     alarmStructureSize size of the alarm data structure
+    @param[in]     alarmStructureElementSize size of an element in the alarm data structure
+    @param[in]     triggerType type of trigger message to be transmitted
 */
-void messsagesTxAlarmPirMessage(const alarmZoneInput * const alarmPirDataStructurePtr, const unsigned int * const alarmPirStructureSize);
-
-/**
-    Transmit a alarm source message. 
-    Convert the message structure into JSON format here.
-
-    @param[in]     alarmSourceDataStructurePtr pointer to the alarm source data structure
-    @param[in]     alarmSourceStructureSize size of the alarm source data structure
-*/
-void messsagesTxAlarmSourceMessage(const alarmZoneInput * const alarmSourceDataStructurePtr, const unsigned int * const alarmSourceStructureSize);
+void messsagesTxAlarmTriggerMessage(const alarmZoneInput * const alarmDataStructurePtr, const unsigned int * const alarmStructureSize, const unsigned int * const alarmStructureElementSize, const alarmTriggerTypes triggerType);
 
 /**
     Transmit a NVM status message.
