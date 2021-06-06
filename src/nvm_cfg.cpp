@@ -22,6 +22,9 @@ static const nvmSubConfigIO nvmSubConfigIODefault = {300, PWMRANGE, ENABLED, nvm
 // NVM ROM defaults for nvmSubConfigAlarm
 static const nvmSubConfigAlarm nvmSubConfigAlarmDefault = {"Home Address", nvmFooterCrcDefault};
 
+// NVM ROM defaults for nvmSubConfigHawkbit
+static const nvmSubConfigHawkbit nvmSubConfigHawkbitDefault = {"svr.max.lan:9090", "00000000000000000000000000000000", 0, "DEFAULT"};
+
 // NVM ROM defaults for nvmSubConfigExt1
 static const nvmSubConfigExt1 nvmSubConfigExt1Default = {'G', 'R', nvmFooterCrcDefault};
 
@@ -65,6 +68,13 @@ static const nvmStructureConfig nvmConfig[] = { // Memory configuration for nvmS
                                                 (const uint8_t * const) & nvmSubConfigAlarmDefault,
                                                 (uint8_t * const) & nvmRamMirror.alarm.footer.crc,
                                                 ((sizeof(nvmRamMirror.alarm) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
+                                                true},
+
+                                                // Memory configuration for nvmSubConfigHawkbit
+                                                {(uint8_t * const) & nvmRamMirror.hawkbit, 
+                                                (const uint8_t * const) & nvmSubConfigHawkbitDefault,
+                                                (uint8_t * const) & nvmRamMirror.hawkbit.footer.crc,
+                                                ((sizeof(nvmRamMirror.hawkbit) / sizeof(uint8_t)) - NVM_CRC_SIZE_BYTES),
                                                 true},
 
                                                 // Memory configuration for nvmSubConfigExt1

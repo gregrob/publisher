@@ -75,6 +75,11 @@
 
 #define HTTP_TEXT_ALARM_ADDRESS    "Home Address"
 
+#define HTTP_TEXT_HAWKBIT_SERVER     "Hawkbit Server"
+#define HTTP_TEXT_HAWKBIT_TOKEN      "Hawkbit Token"
+#define HTTP_TEXT_HAWKBIT_TOKEN_TYPE "Hawkbit Token Type"
+#define HTTP_TEXT_HAWKBIT_TENNANT    "Hawkbit Tennant"
+
 // HTTP constant strings for the configuration portal
 const char* httpTextHeadingNvm      = HTTP_PARAM_HEADING_START "NVM Settings"             HTTP_PARAM_HEADING_END;
 const char* httpTextNvmVersion      = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_NVM_VERSION      HTTP_PARAM_TEXT_END;
@@ -97,6 +102,12 @@ const char* httpTextCfgResetSw      = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_IO_RESE
 
 const char* httpTextHeadingAlarm    = HTTP_PARAM_HEADING_START "Alarm Settings"           HTTP_PARAM_HEADING_END;
 const char* httpTextHomeAddress     = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_ALARM_ADDRESS    HTTP_PARAM_TEXT_END;
+
+const char* httpTextHeadingHawkbit  = HTTP_PARAM_HEADING_START "Hawkbit Settings"           HTTP_PARAM_HEADING_END;
+const char* httpTextHawkbitServer   = HTTP_PARAM_TEXT_1_START  HTTP_TEXT_HAWKBIT_SERVER     HTTP_PARAM_TEXT_END;
+const char* httpTextHawkbitToken    = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_HAWKBIT_TOKEN      HTTP_PARAM_TEXT_END;
+const char* httpTextHawkbitTokenTyp = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_HAWKBIT_TOKEN_TYPE HTTP_PARAM_TEXT_END;
+const char* httpTextHawkbitTennant  = HTTP_PARAM_TEXT_N_START  HTTP_TEXT_HAWKBIT_TENNANT    HTTP_PARAM_TEXT_END;
 
 // SSID connected
 static char ssidString[WIFI_BUFFER_SIZE_SSID];
@@ -290,6 +301,9 @@ void setupWifi(void) {
 
     // String storage for reset switch config (text entry field)
     char resetSwCfgString[STRNLEN_INT(1) + 1];
+
+    // String storage for Hawkbit token type index
+    char hawkbitTokenTypeIndex[STRNLEN_INT(255) + 1];
     
     // Explicitly set mode, esp defaults to STA+AP
     WiFi.mode(WIFI_STA);
@@ -384,6 +398,28 @@ void setupWifi(void) {
     wifiManager.addParameter(&textHomeAddress);
     wifiManager.addParameter(&fieldHomeAddress);
     
+    // Hawkbit configs
+    WiFiManagerParameter textHeadingHawkbit(httpTextHeadingHawkbit);
+    WiFiManagerParameter textHawkbitServer(httpTextHawkbitServer);
+    WiFiManagerParameter fieldHawkbitServer("hawkbitServer", HTTP_TEXT_HAWKBIT_SERVER, ramMirrorPtr->hawkbit.hawkbitServer, sizeof(ramMirrorPtr->hawkbit.hawkbitServer));
+    WiFiManagerParameter textHawkbitToken(httpTextHawkbitToken);
+    WiFiManagerParameter fieldHawkbitToken("hawkbitToken", HTTP_TEXT_HAWKBIT_TOKEN, ramMirrorPtr->hawkbit.hawkbitToken, sizeof(ramMirrorPtr->hawkbit.hawkbitToken));
+    WiFiManagerParameter textHawkbitTokenTyp(httpTextHawkbitTokenTyp);
+    sprintf(hawkbitTokenTypeIndex, "%d", ramMirrorPtr->hawkbit.hawkbitTokenTypeIndex);
+    WiFiManagerParameter fieldHawkbitTokenTyp("hawkbitTokenType", HTTP_TEXT_HAWKBIT_TOKEN_TYPE, hawkbitTokenTypeIndex, STRNLEN_INT(255));
+    WiFiManagerParameter textHawkbitTennant(httpTextHawkbitTennant);
+    WiFiManagerParameter fieldHawkbitTennant("hawkbitTennant", HTTP_TEXT_HAWKBIT_TENNANT, ramMirrorPtr->hawkbit.hawkbitTennant, sizeof(ramMirrorPtr->hawkbit.hawkbitTennant));
+
+    wifiManager.addParameter(&textHeadingHawkbit);
+    wifiManager.addParameter(&textHawkbitServer);
+    wifiManager.addParameter(&fieldHawkbitServer);
+    wifiManager.addParameter(&textHawkbitToken);
+    wifiManager.addParameter(&fieldHawkbitToken);
+    wifiManager.addParameter(&textHawkbitTokenTyp);
+    wifiManager.addParameter(&fieldHawkbitTokenTyp);
+    wifiManager.addParameter(&textHawkbitTennant);
+    wifiManager.addParameter(&fieldHawkbitTennant);
+    
     // Debug message
     debugMessage = (String() + "Connecting to WiFi network...");
     debugLog(&debugMessage, info);
@@ -423,6 +459,13 @@ void setupWifi(void) {
         // Alarm configs
         strcpy(ramMirrorPtr->alarm.homeAddress, fieldHomeAddress.getValue());
         nvmUpdateRamMirrorCrcByName(nvmAlarmStruc);
+        
+        // Hawkbit configs
+        strcpy(ramMirrorPtr->hawkbit.hawkbitServer, fieldHawkbitServer.getValue());
+        strcpy(ramMirrorPtr->hawkbit.hawkbitToken, fieldHawkbitToken.getValue());
+        ramMirrorPtr->hawkbit.hawkbitTokenTypeIndex = (uint8_t) atoi(fieldHawkbitTokenTyp.getValue());
+        strcpy(ramMirrorPtr->hawkbit.hawkbitTennant, fieldHawkbitTennant.getValue());
+        nvmUpdateRamMirrorCrcByName(nvmHawkbitStruc);
         
         nvmComittRamMirror();
         

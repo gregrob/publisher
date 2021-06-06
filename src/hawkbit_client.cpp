@@ -62,18 +62,20 @@ static const char * hawkbitClientStateNames[] {
     "stmHawkbitConfig"
 };
 
+// Token types
+static const char * hawkbitTokenTypes[] {
+    "GatewayToken",
+    "TargetToken"
+};
+
 // Module name for debug messages
-const char* hawkbitClientModuleName = "hawkbitClient";
-
-// Hawkbit tennant ID
-const char* hawkbitClientTennantID = "DEFAULT";
-
-// Hawkbit server
-const char* hawkbitClientServerURL = "svr.max.lan:9090";
+static const char* hawkbitClientModuleName = "hawkbitClient";
 
 // Hawkbit gateway security token
-const char* hawkbitClientGatewayToken = "2401a1f9f311a30de365b861a35bc620";
+static char hawkbitClientToken[sizeof(((nvmSubConfigHawkbit *)0)->hawkbitToken)];;
 
+// Hawkbit token index
+static uint8_t hawkbitTokenTypeIndex;
 
 // JSON static document
 static StaticJsonDocument<HAWKBIT_CLIENT_JSON_DOCUMENT_SIZE> doc; 
@@ -115,7 +117,7 @@ static bool hawkbitClientHttp(const String serverPath, JsonDocument * const docP
 
     // Start the HTTP request and set the authentication
     http.begin(wifi, serverPath.c_str());
-    http.addHeader("Authorization", String() + "GatewayToken " + hawkbitClientGatewayToken);
+    http.addHeader("Authorization", String() + hawkbitTokenTypes[hawkbitTokenTypeIndex] + " " + hawkbitClientToken);
 
     // Make sure apiType is within ranage
     if (apiType < hawkbitClientHttpRestTypesTotal) {
@@ -388,7 +390,10 @@ void hawkbitClientConfigResponse(const String * const serverPath, JsonDocument *
     Hawkbit controller init.
 */
 void hawkbitClientInit(void) {
-    
+
+    // Debug message
+    String debugMessage;
+
     // Pointer to the RAM mirror
     const nvmCompleteStructure * ramMirrorPtr;
 
@@ -396,9 +401,29 @@ void hawkbitClientInit(void) {
     (void) nvmGetRamMirrorPointerRO(&ramMirrorPtr);
 
     // TODO: How should local globals be accessed within this function?
-    // TODO: Read hawkbit configuration parameters from NVM
+
+    // Buffer parts of the RAM mirror
+    strncpy(hawkbitClientToken, ramMirrorPtr->hawkbit.hawkbitToken, sizeof(hawkbitClientToken));
+    hawkbitTokenTypeIndex = ramMirrorPtr->hawkbit.hawkbitTokenTypeIndex;
+
+    // Invalid token type index so range bound
+    if(hawkbitTokenTypeIndex >= (sizeof(hawkbitTokenTypes) / sizeof(hawkbitTokenTypes[0]))) {
+        hawkbitTokenTypeIndex = 0;
+
+        // Debug messsage for invalid token type
+        debugMessage = String() + "Invalid token type so assumed " +  hawkbitTokenTypes[hawkbitTokenTypeIndex]; 
+        debugLog(&debugMessage, hawkbitClientModuleName, error);
+    }
+
+    // Valid token type index
+    else {
+        // Debug messsage for valid token type
+        debugMessage = String() + "Loaded token type " +  hawkbitTokenTypes[hawkbitTokenTypeIndex]; 
+        debugLog(&debugMessage, hawkbitClientModuleName, info);
+    }
+    
     hawkbitClientCurrentState = stmHawkbitRestart;
-    hawkbitClientServerPathBase = String() + "http://" + hawkbitClientServerURL + "/" + hawkbitClientTennantID + "/controller/v1/" + getWiFiModuleDetails()->moduleHostName;
+    hawkbitClientServerPathBase = String() + "http://" + ramMirrorPtr->hawkbit.hawkbitServer + "/" + ramMirrorPtr->hawkbit.hawkbitTennant + "/controller/v1/" + getWiFiModuleDetails()->moduleHostName;
     doc.clear();
 }
 

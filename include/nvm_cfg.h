@@ -18,6 +18,12 @@
 // Maximum address length for the home address
 #define NVM_MAX_LENGTH_ADDRESS      (32)
 
+// Maximum length of a HTTP token
+#define NVM_MAX_LENGTH_HTTP_TOKEN   (32+1)
+
+// Maximum length of a tennant
+#define NVM_MAX_LENGTH_TENNANT      (32)
+
 
 // NVM subconfiguration index
 typedef enum {
@@ -26,58 +32,69 @@ typedef enum {
     nvmMqttStruc     = 2,
     nvmIOStruc       = 3,
     nvmAlarmStruc    = 4,
-    nvmExt1Struc     = 5, 
+    nvmHawkbitStruc  = 5,
+    nvmExt1Struc     = 6, 
 
     nvmNumberOfTypes
 } nvmSubConfigIndex;
 
 // NVM NVM structure
 typedef struct __attribute__ ((packed)) {    
-     nvmCoreData             core;                                      // Core data
+    nvmCoreData              core;                                      // Core data
 
-     nvmFooterCrc            footer;
+    nvmFooterCrc             footer;
 } nvmSubConfigNvm;
 
 // Network NVM structure
 typedef struct __attribute__ ((packed)) {    
-     char                    otaPassword[NVM_MAX_LENGTH_PASSWORD];      // OTA password
-     char                    wifiAPPassword[NVM_MAX_LENGTH_PASSWORD];   // Configuraitone mode WiFi AP password
+    char                     otaPassword[NVM_MAX_LENGTH_PASSWORD];      // OTA password
+    char                     wifiAPPassword[NVM_MAX_LENGTH_PASSWORD];   // Configuraitone mode WiFi AP password
 
-     nvmFooterCrc            footer;
+    nvmFooterCrc             footer;
 } nvmSubConfigNetwork;
 
 // MQTT NVM structure
 typedef struct __attribute__ ((packed)) {    
-     char                    mqttServer[NVM_MAX_LENGTH_URL];            // MQTT server
-     char                    mqttUser[NVM_MAX_LENGTH_USER];             // MQTT user name
-     char                    mqttPassword[NVM_MAX_LENGTH_PASSWORD];     // MQTT password
-     char                    mqttTopicRoot[NVM_MAX_LENGTH_TOPIC];       // MQTT root topic
-
-     nvmFooterCrc            footer;
+    char                     mqttServer[NVM_MAX_LENGTH_URL];            // MQTT server
+    char                     mqttUser[NVM_MAX_LENGTH_USER];             // MQTT user name
+    char                     mqttPassword[NVM_MAX_LENGTH_PASSWORD];     // MQTT password
+    char                     mqttTopicRoot[NVM_MAX_LENGTH_TOPIC];       // MQTT root topic
+    
+    nvmFooterCrc             footer;
 } nvmSubConfigMqtt;
 
 // IO NVM structure
 typedef struct __attribute__ ((packed)) {
-     uint16_t               ledBrightnessRunMode;                       // Run mode LED brightness
-     uint16_t               ledBrightnessConfigMode;                    // Config mode LED brightness
-     uint8_t                resetSwitchEnabled;                         // Reset switch enabled
-     
-     nvmFooterCrc           footer;
+    uint16_t                 ledBrightnessRunMode;                      // Run mode LED brightness
+    uint16_t                 ledBrightnessConfigMode;                   // Config mode LED brightness
+    uint8_t                  resetSwitchEnabled;                        // Reset switch enabled
+
+    nvmFooterCrc             footer;
 } nvmSubConfigIO;
 
 // Alarm NVM structure
 typedef struct __attribute__ ((packed)) {
-     char                    homeAddress[NVM_MAX_LENGTH_ADDRESS];       // Home address for the alarm
-         
-     nvmFooterCrc            footer;
+    char                     homeAddress[NVM_MAX_LENGTH_ADDRESS];       // Home address for the alarm
+    
+    nvmFooterCrc             footer;
 } nvmSubConfigAlarm;
+
+// Hawkbit NVM structure
+typedef struct __attribute__ ((packed)) {
+    char                     hawkbitServer[NVM_MAX_LENGTH_URL];         // Hawkbit server
+    char                     hawkbitToken[NVM_MAX_LENGTH_HTTP_TOKEN];   // Hawkbit security token     
+    uint8_t                  hawkbitTokenTypeIndex;                     // Hawkbit security token type index (GatewayToken, TargetToken)
+    char                     hawkbitTennant[NVM_MAX_LENGTH_TENNANT];    // Hawkbit tennant
+
+    nvmFooterCrc             footer;
+} nvmSubConfigHawkbit;
 
 // Extensions 1 NVM structure
 typedef struct __attribute__ ((packed)) {
-     unsigned char          char1;                                      // Character 1
-     unsigned char          char2;                                      // Character 2
+    unsigned char            char1;                                     // Character 1
+    unsigned char            char2;                                     // Character 2
 
-     nvmFooterCrc           footer;
+    nvmFooterCrc             footer;
 } nvmSubConfigExt1;
 
 // Complete NVM structure
@@ -87,6 +104,7 @@ typedef struct __attribute__ ((packed)) {
     nvmSubConfigMqtt        mqtt;                // MQTT settings
     nvmSubConfigIO          io;                  // IO settings
     nvmSubConfigAlarm       alarm;               // Alarm settings
+    nvmSubConfigHawkbit     hawkbit;             // Hawkbit settings
     nvmSubConfigExt1        ext1;                // Extensions 1 settings
 } nvmCompleteStructure;
 
