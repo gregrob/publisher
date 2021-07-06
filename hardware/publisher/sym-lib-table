@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name SparkFun-Boards)(type Legacy)(uri ${KIPRJMOD}/lib/SparkFun-KiCad-Libraries/Libraries/SparkFun-Boards.lib)(options "")(descr ""))
+  (lib (name development_boards)(type Legacy)(uri "${KIPRJMOD}/lib/development-boards-lib/development boards.lib")(options "")(descr ""))
+)
