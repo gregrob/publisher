@@ -5,7 +5,7 @@
 #define VERSION_CONTENTS_MAJOR  "000"
 
 // Contents for minor version
-#define VERSION_CONTENTS_MINOR  "006"
+#define VERSION_CONTENTS_MINOR  "007"
 
 // Contents for bugfix version
 #define VERSION_CONTENTS_BUGFIX "005"

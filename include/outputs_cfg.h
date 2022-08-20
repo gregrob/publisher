@@ -18,6 +18,7 @@ enum outputIndex {
     configMode              = 0,
     runMode                 = 1,
     alarmCtrl               = 2,
+    garageDoorCtrl          = 2,
     
     outputsNumberOfTypes
 };

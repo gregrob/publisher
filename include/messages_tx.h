@@ -5,6 +5,7 @@
 #include "runtime.h"
 #include "wifi.h"
 #include "alarm.h"
+#include "garage_door.h"
 #include "nvm.h"
 
 /**
@@ -59,5 +60,13 @@ void messsagesTxAlarmTriggerMessage(const alarmZoneInput * const alarmDataStruct
     @param[in]     nvmDataStructurePtr pointer to the NVM data structure
 */
 void messsagesTxNvmStatusMessage(const nvmData * const nvmDataStructurePtr);
+
+/**
+    Transmit a garage door status message.
+    Convert the message structure into JSON format here.
+
+    @param[in]     garageDoorStatusDataStructurePtr pointer to the garage door status data structure
+*/
+void messsagesTxGarageStatusMessage(const garageDoorStatusData * const garageDoorStatusDataStructurePtr);
 
 #endif

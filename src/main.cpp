@@ -16,6 +16,8 @@
 #include "reset_ctrl.h"
 #include "status_ctrl.h"
 #include "hawkbit_client.h"
+#include "ultrasonics_ctrl.h"
+#include "garage_door.h"
 
 // Local function definitions
 void periodicMessageTx(void);
@@ -41,6 +43,8 @@ Task taskResetCtrl(RESET_CTRL_CYCLIC_RATE, TASK_FOREVER, &restCtrlStateMachine);
 Task taskStatusCtrl(STATUS_CTRL_CYCLIC_RATE, TASK_FOREVER, &statusCtrlStateMachine);
 Task taskHawkbitCtrl(HAWKBIT_CLIENT_CYCLIC_RATE, TASK_FOREVER, &hawkbitClientStateMachine);
 Task taskAlarmCyclic(ALARM_CYCLIC_RATE, TASK_FOREVER, &alarmCyclicTask);
+Task taskUltrasonicsCtrl(ULTRASONICS_CTRL_CYCLIC_RATE, TASK_FOREVER, &ultrasonicCtrlStateMachine);
+Task taskGarageDoorCyclic(GARAGE_DOOR_CYCLIC_RATE, TASK_FOREVER, &garageDoorCyclicTask);
 Task taskPeriodicMessageTx(30000, TASK_FOREVER, &periodicMessageTx);
 
 void testo() {
@@ -83,7 +87,13 @@ void setup(void) {
         // Put the serial pins on D7 = Rx and D8 = Tx.
         alarmSerialPort->swap();
     }
-    
+    else if (getWiFiModuleDetails()->moduleHostType == ultrasonicsModule) {
+        ultrasonicsCtrlInit();
+    }
+    else if (getWiFiModuleDetails()->moduleHostType == garageDoorModule) {
+        garageDoorInit();
+    }
+
     // Set-up wifi
     setupWifi();
 
@@ -106,6 +116,8 @@ void setup(void) {
     scheduler.addTask(taskHawkbitCtrl);
     scheduler.addTask(taskPeriodicMessageTx);
     scheduler.addTask(taskAlarmCyclic);
+    scheduler.addTask(taskUltrasonicsCtrl);
+    scheduler.addTask(taskGarageDoorCyclic);
 
     wifiStatus.enable();
     mqttClientTask.enable();
@@ -120,6 +132,12 @@ void setup(void) {
     
     if (getWiFiModuleDetails()->moduleHostType == alarmModule) {
         taskAlarmCyclic.enable();
+    }
+    else if (getWiFiModuleDetails()->moduleHostType == ultrasonicsModule) {
+        taskUltrasonicsCtrl.enable();
+    }
+    else if (getWiFiModuleDetails()->moduleHostType == garageDoorModule) {
+         taskGarageDoorCyclic.enable();           
     }
 
     scheduler.addTask(switcher);
@@ -161,5 +179,11 @@ void periodicMessageTx(void) {
     // Only handle alarm messages if this is an alarm unit
     if (getWiFiModuleDetails()->moduleHostType == alarmModule) {
         alarmTransmitAlarmAllMessage();
+    }
+    else if (getWiFiModuleDetails()->moduleHostType == ultrasonicsModule) {
+        
+    }
+    else if (getWiFiModuleDetails()->moduleHostType == garageDoorModule) {
+         garageDoorTransmitAlarmAllMessage();           
     }
 }

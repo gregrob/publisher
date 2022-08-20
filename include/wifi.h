@@ -19,9 +19,10 @@ typedef struct {
 
 // Host types
 enum wifiHostTypes {
-    alarmModule = 0,
-    tankModule  = 1, 
-    testModule  = 2
+    alarmModule        = 0,
+    ultrasonicsModule  = 1,
+    garageDoorModule   = 2,
+    testModule         = 3
 };
 
 // Structure for storing module host details

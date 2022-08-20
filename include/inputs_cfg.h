@@ -14,6 +14,7 @@
 enum inputIndex {
     resetSw             = 0,
     alarmSounder        = 1,
+    garageDoorAjar      = 1,
     
     inputsNumberOfTypes
 };

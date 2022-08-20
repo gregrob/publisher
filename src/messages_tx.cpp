@@ -41,6 +41,9 @@ static const char* messageMqttTopicAlarmPir = MESSAGES_TX_MQTT_TOPIC_ALARM_PIR;
 // MQTT topic for alarm source
 static const char* messageMqttTopicAlarmSource = MESSAGES_TX_MQTT_TOPIC_ALARM_SOURCE;
 
+// MQTT topic for garage door status
+static const char* messageMqttTopicGarageDoorStatus = MESSAGES_TX_MQTT_TOPIC_GARAGE_DOOR_STATUS;
+
 /**
     Transmit a version message.
     Convert the message structure into JSON format here.
@@ -225,4 +228,27 @@ void messsagesTxNvmStatusMessage(const nvmData * const nvmDataStructurePtr) {
     
     // Transmit the message
     mqttMessageSendRaw(messageMqttTopicModuleNvm, messageToSend);   
+}
+
+/**
+    Transmit a garage door status message.
+    Convert the message structure into JSON format here.
+
+    @param[in]     garageDoorStatusDataStructurePtr pointer to the garage door status data structure
+*/
+void messsagesTxGarageStatusMessage(const garageDoorStatusData * const garageDoorStatusDataStructurePtr) {
+
+    // Clear the JSON object
+    doc.clear();
+
+    // Populate the date (manually because of mixed types)
+    doc[garageDoorStatusDataStructurePtr->garageDoorStateStringName] = garageDoorStatusDataStructurePtr->garageDoorStateStringPtr;
+    doc[garageDoorStatusDataStructurePtr->garageDoorStateName] = *garageDoorStatusDataStructurePtr->garageDoorStatePtr;
+    
+    // Searilise the JSON string
+    serializeJson(doc, messageToSend, MESSAGES_TX_MESSAGE_BUFFER_SIZE);
+    
+    // Transmit the message
+    mqttMessageSendRaw(messageMqttTopicGarageDoorStatus, messageToSend);  
+
 }

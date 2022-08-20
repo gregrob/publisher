@@ -9,6 +9,7 @@
 #include "wifi.h"
 #include "mqtt.h"
 #include "alarm.h"
+#include "garage_door.h"
 #include "outputs_cfg.h"
 #include "reset_ctrl.h"
 
@@ -17,6 +18,7 @@
 #define JSON_DOC_SIZE           (256)
 #define JSON_DOC_VAR_RESET      "reset"
 #define JSON_DOC_VAR_ARMDISARM  "armdisarm"
+#define JSON_DOC_VAR_OPENCLOSE  "openclose"
 
 // Static functions
 static void mqttMessageCallback(char* topic, byte* payload, unsigned int length);
@@ -25,6 +27,7 @@ static void mqttMessageSubscribe(const char * const shortTopic);
 static void mqttMessageFullTopic(const char * const shortTopic, String * const longTopicPtr);
 
 // MQTT settings
+const char* mqtt_garage_door_command = "garage door command";
 const char* mqtt_alarm_command = "alarm command";
 const char* mqtt_module_command = "module command";
 const char* mqttLwtMessage = "module status";
@@ -109,6 +112,19 @@ static void mqttMessageCallback(char* topic, byte* payload, unsigned int length)
                     debugLog(&debugMessage, info);
                 }
             }
+
+            // Garage door command message (+1 because of /)
+            else if (strcmp(topic + mqttMessageTopicBase.length(), mqtt_garage_door_command) == 0) {
+
+                // Check if the json contains a valid text value
+                if (doc.containsKey(JSON_DOC_VAR_OPENCLOSE)) {               
+                    String rxText = doc[JSON_DOC_VAR_OPENCLOSE];
+                    garageDoorFireOneShot();
+
+                    debugMessage = (String() + "MQTT found JSON key: " + JSON_DOC_VAR_OPENCLOSE);
+                    debugLog(&debugMessage, info);
+                }
+            }
         }
     }
 
@@ -151,7 +167,17 @@ static void mqttReconnect(void) {
         debugLog(&debugMessage, info);
         
         mqttMessageSubscribe(mqtt_module_command);
-        mqttMessageSubscribe(mqtt_alarm_command);
+
+        // Subscribing for module specific messages
+        if (getWiFiModuleDetails()->moduleHostType == alarmModule) {
+            mqttMessageSubscribe(mqtt_alarm_command);
+        }
+        else if (getWiFiModuleDetails()->moduleHostType == ultrasonicsModule) {
+            
+        }
+        else if (getWiFiModuleDetails()->moduleHostType == garageDoorModule) {
+            mqttMessageSubscribe(mqtt_garage_door_command);           
+        }      
 
         // Transmit the LWT message
         client.publish(fullTopicLwt.c_str(), mqttLwtValueOnline, true);
