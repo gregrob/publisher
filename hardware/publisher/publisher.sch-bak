@@ -838,4 +838,6 @@ Text Label 8950 1750 0    50   ~ 0
 HV
 Wire Wire Line
 	5350 3550 6600 3550
+Text Notes 2950 5600 0    50   ~ 0
+6-July-2021 - Added 500ohms in series on the \nCOM_RX_HV input (2x 1k in parallel).  Intent to \nstop the random panel tamper alarm.\n\nBattery = 13.86V\nLAN Power = 13.88V\nComms = 15V\n15v / 500ohms = 30mA
 $EndSCHEMATC

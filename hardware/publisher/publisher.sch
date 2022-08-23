@@ -733,10 +733,10 @@ F 3 "~" H 6000 4450 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R8
+L Device:R R8**
 U 1 1 60D9FD34
 P 6350 1650
-F 0 "R8" V 6143 1650 50  0000 C CNN
+F 0 "R8**" V 6143 1650 50  0000 C CNN
 F 1 "0R" V 6234 1650 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 6280 1650 50  0001 C CNN
 F 3 "~" H 6350 1650 50  0001 C CNN
@@ -799,10 +799,10 @@ Wire Wire Line
 Wire Wire Line
 	9650 1850 9650 2200
 $Comp
-L Device:R R10
+L Device:R R10*
 U 1 1 60EF6109
 P 6350 1350
-F 0 "R10" V 6143 1350 50  0000 C CNN
+F 0 "R10*" V 6143 1350 50  0000 C CNN
 F 1 "0R" V 6234 1350 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 6280 1350 50  0001 C CNN
 F 3 "~" H 6350 1350 50  0001 C CNN
@@ -840,4 +840,8 @@ Wire Wire Line
 	5350 3550 6600 3550
 Text Notes 2950 5600 0    50   ~ 0
 6-July-2021 - Added 500ohms in series on the \nCOM_RX_HV input (2x 1k in parallel).  Intent to \nstop the random panel tamper alarm.\n\nBattery = 13.86V\nLAN Power = 13.88V\nComms = 15V\n15v / 500ohms = 30mA
+Text Notes 5800 2800 0    50   ~ 0
+R8**\nConsider a 10K resistor.  \nOn boot, RX can be pulled high by the microcontroller. \nIf the input is pulled low this would cause a short with a 0R.\n\nThe garage door module has replaced R8 with a 10K.
+Text Notes 5800 850  0    50   ~ 0
+R10*\nConsider removing.\nBoot fails if TX is pulled low.\n
 $EndSCHEMATC
