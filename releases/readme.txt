@@ -14,3 +14,12 @@
 
 --------------------------------------------------
 
+000.007.006
+2022-09-08
+
+- The input debounce configuration was incorrectly
+  set to 0.  This releases fixes this and 
+  configures the reset pin to 40ms and alarm 
+  sounder pin to 500ms.
+
+--------------------------------------------------
