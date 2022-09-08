@@ -5,8 +5,8 @@
 
 
 // Input configuraiton structure
-static inputConfiguration inputConfig[] = {{"resetSw",      INPUTS_PIN_MAP_RESET,         true, 0, 0, LOW, LOW, LOW, LOW},
-                                           {"alarmSounder", INPUTS_PIN_MAP_ALARM_SOUNDER, true, 0, 0, LOW, LOW, LOW, LOW}
+static inputConfiguration inputConfig[] = {{"resetSw",      INPUTS_PIN_MAP_RESET,         true, INPUTS_DEBOUNCE_TIMER_RESET_TYP,       0, LOW, LOW, LOW, LOW},
+                                           {"alarmSounder", INPUTS_PIN_MAP_ALARM_SOUNDER, true, INPUTS_DEBOUNCE_TIMER_RESET_ALARM_SND, 0, LOW, LOW, LOW, LOW}
 };
 
 // Input configuration size (in elements)

@@ -4,11 +4,13 @@
 #include "inputs.h"
 
 // Input pin for the reset switch
-#define INPUTS_PIN_MAP_RESET            (D6)
+#define INPUTS_PIN_MAP_RESET                  (D6)
 
 // Input pin for alarm sounder
-#define INPUTS_PIN_MAP_ALARM_SOUNDER    (RX)
+#define INPUTS_PIN_MAP_ALARM_SOUNDER          (RX)
 
+// Input debounce timer - alarm sounder input @500ms
+#define INPUTS_DEBOUNCE_TIMER_RESET_ALARM_SND (50)
 
 // Enumeration for inputs (index must align into configuration structure)
 enum inputIndex {

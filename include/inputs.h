@@ -2,10 +2,10 @@
 #define INPUTS_H
 
 // Call rate for the cyclic taks
-#define INPUTS_CYCLIC_RATE (10)
+#define INPUTS_CYCLIC_RATE                 (10)
 
-// Reset value for inputs debounce timer
-#define INPUTS_DEBOUNCE_TIMER_RESET    (4)
+// Input debounce timer - typical input @40ms
+#define INPUTS_DEBOUNCE_TIMER_RESET_TYP    (4)
 
 
 // Structure for input configuration data
