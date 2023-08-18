@@ -10,7 +10,11 @@ Applications:
 * PIR states.
 * Remote arm / disarm.
 
-2. Tank Water Level
+2. Garage door
+* Door state.
+* Open / Close.
+
+3. Tank Water Level
 * Water level.
 
 ## Software Architecture
