@@ -23,3 +23,14 @@
   sounder pin to 500ms.
 
 --------------------------------------------------
+
+000.007.007
+2024-07-07
+
+- Release to include pub-garage-door-active-v2
+- Pin platform to espressif8266@2.6.3
+
+- BUG: Runtime is in ms not us as variable would
+       suggest
+
+--------------------------------------------------

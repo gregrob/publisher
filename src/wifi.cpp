@@ -138,10 +138,10 @@ static wifiData wifiDataSoftware = {WIFI_NAME_SSID,         ssidString,
 
 // Structure for all publisher modules
 // The last element is always the default 
-static wifiModuleDetail publisherModules[] = {{"483FDA482A64", "pub-alarm-482a64",       alarmModule},
-                                              {"F4CFA2D4EA77", "pub-alarm-active",       alarmModule},
-                                              {"84F3EB27BD6A", "pub-garage-door-active", garageDoorModule},
-                                              {"000000000000", "pub-default",            testModule}
+static wifiModuleDetail publisherModules[] = {{"483FDA482A64", "pub-garage-door-active-v2", garageDoorModule},
+                                              {"F4CFA2D4EA77", "pub-alarm-active",          alarmModule},
+                                              {"84F3EB27BD6A", "pub-garage-door-active",    garageDoorModule},
+                                              {"000000000000", "pub-default",               testModule}
 };
 
 // Pointer to the active module in the publisher module structure
